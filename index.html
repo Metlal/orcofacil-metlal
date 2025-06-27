@@ -10,7 +10,7 @@
 <body>
 
   <!-- LOGO E INFORMAÇÕES DA EMPRESA -->
-  <div class="empresa-info">
+  <div class="empresa-info" style="text-align: center;">
     <img src="logo-metlal.png" alt="Logo METLAL" width="300">
     <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
     <p>CNPJ: 00.000.000/0001-00</p>
@@ -23,18 +23,14 @@
   <form id="orcamentoForm">
     <label for="produto">Produto:</label>
     <select id="produto">
-      <option value="">Selecione</option>
-      <option value="portao">Portão</option>
-      <option value="guarda corpo">Guarda Corpo</option>
-      <option value="escada caracol">Escada Caracol</option>
-      <option value="janela">Janela</option>
+      <option value="">Carregando...</option>
     </select>
 
     <label for="largura">Largura (m):</label>
-    <input type="number" id="largura" step="0.01" required>
+    <input type="number" id="largura" step="0.01">
 
     <label for="altura">Altura (m):</label>
-    <input type="number" id="altura" step="0.01" required>
+    <input type="number" id="altura" step="0.01">
 
     <label for="quantidade">Quantidade:</label>
     <input type="number" id="quantidade" min="1" value="1" required>
@@ -50,40 +46,9 @@
     <button onclick="gerarPDF()">Baixar Orçamento em PDF</button>
   </div>
 
-  <!-- JS -->
-  <script src="app.js"></script>
+  <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    // GERAÇÃO DO PDF
-    function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const resultadoHTML = document.getElementById("resultado").innerText;
-      if (!resultadoHTML) {
-        alert("Nenhum orçamento gerado ainda.");
-        return;
-      }
-
-      doc.setFontSize(12);
-      doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
-      doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
-      doc.text("Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ", 10, 22);
-      doc.text("CEP: 21545-170", 10, 28);
-
-      doc.setFontSize(14);
-      doc.text("Orçamento Gerado:", 10, 40);
-
-      const texto = resultadoHTML.split('\n');
-      let y = 50;
-      texto.forEach(linha => {
-        doc.text(linha.trim(), 10, y);
-        y += 8;
-      });
-
-      doc.save("orcamento_METLAL.pdf");
-    }
-  </script>
+  <script src="script.js"></script>
 
 </body>
 </html>
