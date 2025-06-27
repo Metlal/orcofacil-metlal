@@ -2,7 +2,7 @@ let tabelaPreco = {};
 
 // ID da planilha (extraído da URL)
 const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
-const sheetName = "Precos METLAL";
+const sheetName = "Página1";
 const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
 
 // Função para carregar os dados da planilha
