@@ -2,8 +2,8 @@ let tabelaPreco = {};
 
 // ID da planilha (extraído da URL)
 const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
-const sheetName = "Página1";
-const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
+const sheetName = "Precos METLAL";
+const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${Precos METLAL}`;
 
 // Função para carregar os dados da planilha
 function carregarPrecos() {
@@ -11,7 +11,7 @@ function carregarPrecos() {
     .then(res => res.text())
     .then(data => {
       const jsonData = JSON.parse(data.substr(47).slice(0, -2));
-      const rows = jsonData.table.rows;
+      const rows = jsonData.table.rows.slice(1);
 
       rows.forEach(row => {
         const produto = row.c[0]?.v?.toLowerCase();
