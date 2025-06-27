@@ -11,7 +11,7 @@ function carregarPrecos() {
     .then(res => res.text())
     .then(data => {
       const jsonData = JSON.parse(data.substr(47).slice(0, -2));
-      const rows = jsonData.table.rows.slice(1);
+      const rows = jsonData.table.rows.;
 
       rows.forEach(row => {
         const produto = row.c[0]?.v?.toLowerCase();
