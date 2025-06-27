@@ -1,5 +1,6 @@
 
 let tabelaPreco = {};
+let listaItens = [];
 const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
 const sheetName = "Página1";
 const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
@@ -29,8 +30,6 @@ function carregarPrecos() {
           select.appendChild(option);
         }
       });
-
-      console.log("Produtos carregados:", tabelaPreco);
     })
     .catch(err => {
       console.error("Erro ao carregar planilha:", err);
@@ -38,70 +37,83 @@ function carregarPrecos() {
     });
 }
 
-carregarPrecos().then(() => {
-  document.getElementById("orcamentoForm").addEventListener("submit", function (e) {
-    e.preventDefault();
+carregarPrecos();
 
-    const produto = document.getElementById("produto").value;
-    const largura = parseFloat(document.getElementById("largura").value);
-    const altura = parseFloat(document.getElementById("altura").value);
-    const quantidade = parseInt(document.getElementById("quantidade").value);
+function adicionarItem() {
+  const produto = document.getElementById("produto").value;
+  const largura = parseFloat(document.getElementById("largura").value);
+  const altura = parseFloat(document.getElementById("altura").value);
+  const comprimento = parseFloat(document.getElementById("comprimento").value);
+  const quantidade = parseInt(document.getElementById("quantidade").value);
 
-    if (!produto || isNaN(quantidade)) {
-      alert("Preencha todos os campos corretamente.");
+  if (!produto || isNaN(quantidade)) {
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  const dadosProduto = tabelaPreco[produto];
+  if (!dadosProduto) {
+    alert("Produto não encontrado.");
+    return;
+  }
+
+  const { preco, tipo } = dadosProduto;
+  let subtotal = 0;
+  let descricao = "";
+
+  if (tipo === "m2") {
+    if (isNaN(largura) || isNaN(altura)) {
+      alert("Para produtos por m², informe largura e altura.");
       return;
     }
-
-    const dadosProduto = tabelaPreco[produto];
-    if (!dadosProduto) {
-      alert("Produto não encontrado.");
+    const area = largura * altura;
+    subtotal = preco * area * quantidade;
+    descricao = `Área: ${area.toFixed(2)} m², Preço m²: R$ ${preco.toFixed(2)}`;
+  } else if (tipo === "unidade") {
+    subtotal = preco * quantidade;
+    descricao = `Preço unitário: R$ ${preco.toFixed(2)}`;
+  } else if (tipo === "m") {
+    if (isNaN(comprimento)) {
+      alert("Informe o comprimento para produtos por metro.");
       return;
     }
+    subtotal = preco * comprimento * quantidade;
+    descricao = `Comprimento: ${comprimento.toFixed(2)} m, Preço por metro: R$ ${preco.toFixed(2)}`;
+  } else {
+    alert("Tipo de produto inválido.");
+    return;
+  }
 
-    const { preco, tipo } = dadosProduto;
-    let total = 0;
-    let detalhes = "";
-
-    if (tipo === "m2") {
-      if (isNaN(largura) || isNaN(altura)) {
-        alert("Para produtos por m², informe largura e altura.");
-        return;
-      }
-      const area = largura * altura * quantidade;
-      total = preco * area;
-      detalhes = `
-        <p><strong>Largura:</strong> ${largura.toFixed(2)} m</p>
-        <p><strong>Altura:</strong> ${altura.toFixed(2)} m</p>
-        <p><strong>Área total:</strong> ${area.toFixed(2)} m²</p>
-        <p><strong>Preço por m²:</strong> R$ ${preco.toFixed(2)}</p>
-      `;
-    } else if (tipo === "unidade") {
-      total = preco * quantidade;
-      detalhes = `<p><strong>Preço unitário:</strong> R$ ${preco.toFixed(2)}</p>`;
-    } else {
-      alert("Tipo de produto inválido.");
-      return;
-    }
-
-    const resultadoHTML = `
-      <h3>Orçamento Gerado</h3>
-      <p><strong>Produto:</strong> ${produto}</p>
-      <p><strong>Quantidade:</strong> ${quantidade}</p>
-      ${detalhes}
-      <p><strong>Total:</strong> <span style="color: green; font-size: 1.2em;">R$ ${total.toFixed(2)}</span></p>
-    `;
-
-    document.getElementById("resultado").innerHTML = resultadoHTML;
+  listaItens.push({
+    produto,
+    quantidade,
+    descricao,
+    subtotal
   });
-});
+
+  atualizarLista();
+}
+
+function atualizarLista() {
+  const container = document.getElementById("itensOrcamento");
+  let html = "<h3>Itens do Orçamento</h3><ul>";
+  let total = 0;
+
+  listaItens.forEach(item => {
+    html += `<li><strong>${item.produto}</strong> (${item.quantidade}): ${item.descricao} – <strong>Subtotal:</strong> R$ ${item.subtotal.toFixed(2)}</li>`;
+    total += item.subtotal;
+  });
+
+  html += `</ul><p><strong>Total Geral:</strong> R$ ${total.toFixed(2)}</p>`;
+  container.innerHTML = html;
+}
 
 function gerarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  const resultadoHTML = document.getElementById("resultado").innerText;
-  if (!resultadoHTML) {
-    alert("Nenhum orçamento gerado ainda.");
+  if (listaItens.length === 0) {
+    alert("Adicione ao menos um produto ao orçamento.");
     return;
   }
 
@@ -114,12 +126,25 @@ function gerarPDF() {
   doc.setFontSize(14);
   doc.text("Orçamento Gerado:", 10, 40);
 
-  const texto = resultadoHTML.split('\n');
   let y = 50;
-  texto.forEach(linha => {
-    doc.text(linha.trim(), 10, y);
-    y += 8;
+  let total = 0;
+  listaItens.forEach(item => {
+    const linhas = [
+      `Produto: ${item.produto}`,
+      `Quantidade: ${item.quantidade}`,
+      item.descricao,
+      `Subtotal: R$ ${item.subtotal.toFixed(2)}`
+    ];
+    linhas.forEach(l => {
+      doc.text(l, 10, y);
+      y += 8;
+    });
+    y += 4;
+    total += item.subtotal;
   });
+
+  doc.setFontSize(13);
+  doc.text(`Total Geral: R$ ${total.toFixed(2)}`, 10, y + 10);
 
   doc.save("orcamento_METLAL.pdf");
 }

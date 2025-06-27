@@ -9,7 +9,6 @@
 </head>
 <body>
 
-  <!-- LOGO E INFORMAÇÕES DA EMPRESA -->
   <div class="empresa-info" style="text-align: center;">
     <img src="logo-metlal.png" alt="Logo METLAL" width="300">
     <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
@@ -19,7 +18,6 @@
     <hr />
   </div>
 
-  <!-- FORMULÁRIO DE ORÇAMENTO -->
   <form id="orcamentoForm">
     <label for="produto">Produto:</label>
     <select id="produto">
@@ -32,21 +30,21 @@
     <label for="altura">Altura (m):</label>
     <input type="number" id="altura" step="0.01">
 
+    <label for="comprimento">Comprimento (m):</label>
+    <input type="number" id="comprimento" step="0.01">
+
     <label for="quantidade">Quantidade:</label>
     <input type="number" id="quantidade" min="1" value="1" required>
 
-    <button type="submit">Gerar Orçamento</button>
+    <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
   </form>
 
-  <!-- RESULTADO -->
-  <div id="resultado" style="margin-top: 20px;"></div>
+  <div id="itensOrcamento" style="margin-top: 20px;"></div>
 
-  <!-- BOTÃO PDF -->
   <div style="margin-top: 20px; text-align: center;">
-    <button onclick="gerarPDF()">Baixar Orçamento em PDF</button>
+    <button onclick="gerarPDF()">📥 Baixar Orçamento em PDF</button>
   </div>
 
-  <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="script.js"></script>
 
