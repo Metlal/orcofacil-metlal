@@ -32,7 +32,7 @@
   <div class="container">
   <div class="empresa-info">
     <img src="logo-metlal.png" alt="Logo METLAL">
-    <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
+    <h2></h2>
     <p>CNPJ: 00.000.000/0001-00</p>
     <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
     <p>CEP: 21545‑170</p>
@@ -43,11 +43,12 @@
     <label>Nome do Cliente:</label>
     <input id="cliente" type="text" required>
 
-    <label>Nº do Orçamento:</label>
-    <input id="numero" type="text" readonly>
+    <label for="numero">Número do Orçamento:</label>
+    <input type="text" id="numero" value="MET-20250628-1447" required>
 
-    <label>Data:</label>
-    <input id="data" type="date" readonly>
+    <label for="data">Data:</label>
+    <input type="date" id="data" value="2025-06-28" required>
+
 
     <label>Produto:</label>
     <select id="produto"><option value="">Carregando...</option></select>
