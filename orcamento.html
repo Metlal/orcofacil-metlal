@@ -1,227 +1,175 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Orçafácil METLAL</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <style>
-    body { font-family: 'Inter', sans-serif; background-color:#f4f6f8; margin:0; padding:0; color:#333; }
-    .container { max-width:850px; margin:30px auto; background:#fff; border-radius:12px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-    .empresa-info { text-align:center; margin-bottom:20px; }
-    .empresa-info img { max-width:200px; margin-bottom:10px; }
-    h2 { color:#0056b3; }
-    label { display:block; margin-top:10px; font-weight:600; }
-    input, select { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-bottom:14px; font-size:14px; }
-    button { background:#0056b3; color:#fff; padding:12px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:600; transition: background .3s; }
-    button:hover { background:#003f88; }
-    #itensOrcamento { margin-top:30px; background:#f1f3f5; border-radius:10px; padding:20px; }
-    ul { padding-left:20px; }
-    ul li { margin-bottom:12px; line-height:1.5; }
-    .total { font-size:18px; font-weight:bold; color:green; }
-    .assinaturas { margin-top:40px; }
-    .assinaturas div { display:inline-block; width:45%; text-align:center; margin-top:40px;}
-    .assinaturas div hr { border:0; border-top:1px solid #ccc; margin-bottom:6px;}
-    .login { max-width: 350px; margin: 80px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .hidden { display: none; }
-  </style>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Orçafácil METLAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  body, input, select, button { font-family: 'Inter', sans-serif; }
+  .hidden { display: none; }
+  .login, .container { max-width: 400px; margin: 60px auto; padding:20px; background:#fff; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+  .container { max-width:850px; }
+  label, h2, p { margin: 10px 0; }
+  input, select, button { width:100%; padding:10px; margin:6px 0; border-radius:6px; border:1px solid #ccc; }
+  button { background:#0056b3; color:#fff; border:none; cursor:pointer; }
+  button:hover { background:#003f88; }
+  #itensOrcamento ul { padding-left: 20px; }
+  #itensOrcamento li { margin-bottom: 10px; }
+  .total { font-size:18px; color:green; font-weight:bold; }
+</style>
 </head>
 <body>
 
-<!-- TELA DE LOGIN -->
+<!-- Login Screen -->
 <div id="loginScreen" class="login">
-  <h2>Login</h2>
+  <h2>Login METLAL</h2>
   <label>Usuário:</label>
-  <input type="text" id="usuarioLogin" />
+  <input id="usuario" type="text" placeholder="admin"/>
   <label>Senha:</label>
-  <input type="password" id="senhaLogin" />
+  <input id="senha" type="password" placeholder="1234"/>
   <button onclick="fazerLogin()">Entrar</button>
 </div>
 
-<!-- CONTEÚDO PRINCIPAL -->
+<!-- Main App -->
 <div id="mainContent" class="container hidden">
-  <div class="empresa-info">
-    <img src="logo-metlal.png" alt="Logo METLAL">
-    <h2></h2>
-    <p>CNPJ: 00.000.000/0001-00</p>
-    <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
-    <p>CEP: 21545‑170</p>
+  <h2>Orçafácil METLAL</h2>
+  <div>
+    <label>Nome do Cliente:</label>
+    <input id="cliente" type="text" placeholder="Nome do cliente"/>
+    <label>Número do Orçamento:</label>
+    <input id="numero" type="text" readonly/>
+    <label>Data:</label>
+    <input id="data" type="date"/>
+    <button onclick="novoOrcamento()">🆕 Novo Orçamento</button>
   </div>
 
-  <form id="orcamentoForm" onsubmit="return false;">
-    <label>Nome do Cliente:</label>
-    <input id="cliente" type="text" required>
-    <label>Número do Orçamento:</label>
-    <input id="numero" type="text" readonly>
-    <label>Data:</label>
-    <input type="date" id="data" required>
+  <hr/>
 
-<script>
-  let tabelaPreco = {}, listaItens = [];
-  const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
-  const sheetName = "Página1";
-  const sheetURL = "https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}";
-  const saveURL = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0..."
-
+  <div>
     <label>Produto:</label>
-    <select id="produto"><option value="">Carregando...</option></select>
-
-    <label>Largura (m):</label><input id="largura" type="number" step="0.01">
-    <label>Altura (m):</label><input id="altura" type="number" step="0.01">
-    <label>Comprimento (m):</label><input id="comprimento" type="number" step="0.01">
-    <label>Quantidade:</label><input id="quantidade" type="number" min="1" value="1" required>
-
-    <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
-  </form>
+    <select id="produto"><option>Carregando...</option></select>
+    <label>Largura (m):</label><input id="largura" type="number" step="0.01"/>
+    <label>Altura (m):</label><input id="altura" type="number" step="0.01"/>
+    <label>Comprimento (m):</label><input id="comprimento" type="number" step="0.01"/>
+    <label>Quantidade:</label><input id="quantidade" type="number" min="1" value="1"/>
+    <button onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
+  </div>
 
   <div id="itensOrcamento"></div>
 
-  <div style="text-align:center; margin-top:20px;">
-    <button onclick="gerarPDF()">📥 Baixar PDF</button>
-    <button onclick="novoOrcamento()">🆕 Novo Orçamento</button>
+  <div style="margin-top:20px;">
+    <button onclick="gerarPDF()">📥 Gerar PDF e Salvar</button>
   </div>
 </div>
 
 <script>
-  const urlPlanilha = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0jlx68GDBsmjNBkiYPzjgYi7mv-SUE57Gk6kWzarPl8MskACntRsq9e/exec";
-  let listaItens = [], tabelaPreco = {}, numeroAtual = 1;
+  const loginUser = "admin", loginPass = "1234";
+  const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
+  const sheetName = "Página1";
+  const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
+  const webAppURL = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0jlx68GDBsmjNBkiYPzjgYi7mv-SUE57Gk6kWzarPl8MskACntRsq9e/exec";
+
+  let tabelaPreco = {}, listaItens = [], contador = 1;
 
   function fazerLogin() {
-    const usuario = document.getElementById("usuarioLogin").value;
-    const senha = document.getElementById("senhaLogin").value;
-    if (usuario === "admin" && senha === "1234") {
-      document.getElementById("loginScreen").classList.add("hidden");
-      document.getElementById("mainContent").classList.remove("hidden");
-      carregarPrecos();
-      gerarNumeroOrcamento();
-      document.getElementById("data").value = new Date().toISOString().split("T")[0];
+    if (usuario.value === loginUser && senha.value === loginPass) {
+      loginScreen.classList.add("hidden");
+      mainContent.classList.remove("hidden");
+      novoOrcamento();
+      carregarProdutos();
     } else {
-      alert("Usuário ou senha inválidos");
+      alert("Credenciais inválidas");
     }
   }
 
-  function gerarNumeroOrcamento() {
-    document.getElementById("numero").value = `MT${String(numeroAtual).padStart(4, '0')}`;
+  function carregarProdutos() {
+    fetch(sheetURL)
+      .then(r => r.text())
+      .then(t => {
+        const js = JSON.parse(t.substring(47).slice(0,-2));
+        produto.innerHTML = "<option value=''>-- selecione --</option>";
+        js.table.rows.forEach(r => {
+          const nome = r.c[0]?.v, preco = r.c[1]?.v, tipo = r.c[2]?.v;
+          if(nome && preco && tipo) {
+            tabelaPreco[nome] = {preco: parseFloat(preco), tipo: tipo.toLowerCase()};
+            produto.innerHTML += `<option value="${nome}">${nome}</option>`;
+          }
+        });
+      })
+      .catch(err => {
+        alert("Erro ao carregar produtos");
+        produto.innerHTML = "<option value=''>erro</option>";
+        console.error(err);
+      });
   }
 
   function novoOrcamento() {
-    numeroAtual++;
-    gerarNumeroOrcamento();
-    document.getElementById("orcamentoForm").reset();
-    document.getElementById("data").value = new Date().toISOString().split("T")[0];
+    contador++;
+    numero.value = `MT${String(contador).padStart(4, "0")}`;
+    data.value = new Date().toISOString().split("T")[0];
+    cliente.value = "";
     listaItens = [];
     atualizarLista();
   }
 
-  function carregarPrecos() {
-    fetch(urlPlanilha + "?tipo=produtos")
-      .then(r => r.json())
-      .then(data => {
-        const select = document.getElementById("produto");
-        select.innerHTML = '<option value="">Selecione</option>';
-        data.forEach(p => {
-          tabelaPreco[p.nome.toLowerCase()] = { preco: parseFloat(p.preco), tipo: p.tipo };
-          const opt = document.createElement("option");
-          opt.value = p.nome.toLowerCase();
-          opt.textContent = p.nome;
-          select.appendChild(opt);
-        });
-      })
-      .catch(err => {
-        console.error("Erro ao carregar produtos:", err);
-        alert("Erro ao carregar produtos.");
-      });
-  }
-
   function adicionarItem() {
-    const produto = document.getElementById("produto").value;
-    const largura = parseFloat(document.getElementById("largura").value);
-    const altura = parseFloat(document.getElementById("altura").value);
-    const comprimento = parseFloat(document.getElementById("comprimento").value);
-    const quantidade = parseInt(document.getElementById("quantidade").value);
-    const dados = tabelaPreco[produto];
-
-    if (!produto || isNaN(quantidade) || !dados) {
-      alert("Preencha todos os campos corretamente.");
-      return;
-    }
-
-    let subtotal = 0, descricao = "", preco = dados.preco;
-
-    if (dados.tipo === "m2") {
-      if (isNaN(largura) || isNaN(altura)) return alert("Informe largura e altura");
-      const area = largura * altura;
-      subtotal = preco * area * quantidade;
-      descricao = `Área: ${area.toFixed(2)} m² | R$ ${preco.toFixed(2)} m²`;
-    } else if (dados.tipo === "m") {
-      if (isNaN(comprimento)) return alert("Informe comprimento");
-      subtotal = preco * comprimento * quantidade;
-      descricao = `Comp.: ${comprimento.toFixed(2)} m | R$ ${preco.toFixed(2)} m`;
+    const nome = produto.value, qtd = parseInt(quantidade.value);
+    const dados = tabelaPreco[nome];
+    if (!nome || !dados || qtd <=0) return alert("Selecione produto e quantidade.");
+    let sub = 0, desc="";
+    if (dados.tipo==="m2") {
+      const l = parseFloat(largura.value), a = parseFloat(altura.value);
+      if(isNaN(l)||isNaN(a)) return alert("Informe largura e altura");
+      const area = l*a; sub = dados.preco*area*qtd; desc = `Área ${area.toFixed(2)}m²`;
+    } else if (dados.tipo==="m") {
+      const c = parseFloat(comprimento.value);
+      if(isNaN(c)) return alert("Informe comprimento");
+      sub = dados.preco*c*qtd; desc = `Comp ${c.toFixed(2)}m`;
     } else {
-      subtotal = preco * quantidade;
-      descricao = `R$ ${preco.toFixed(2)} un`;
+      sub = dados.preco*qtd; desc = `Unidade`;
     }
-
-    listaItens.push({ produto, quantidade, descricao, subtotal });
+    listaItens.push({nome, qtd, desc, sub});
     atualizarLista();
   }
 
   function atualizarLista() {
-    const container = document.getElementById("itensOrcamento");
-    let html = "<h3>Itens do Orçamento</h3><ul>", total = 0;
-
-    listaItens.forEach((item, i) => {
-      html += `<li><strong>${item.produto}</strong> (${item.quantidade}) — ${item.descricao} | Subtotal: R$ ${item.subtotal.toFixed(2)} 
-      <button onclick="removerItem(${i})">❌</button></li>`;
-      total += item.subtotal;
+    let html = "<h3>Itens:</h3><ul>", tot = 0;
+    listaItens.forEach((it,i) => {
+      html += `<li>${it.nome} x${it.qtd} (${it.desc}) – R$ ${it.sub.toFixed(2)} <button onclick="remover(${i})">❌</button></li>`;
+      tot += it.sub;
     });
-
-    html += `</ul><p class="total">Total Geral: R$ ${total.toFixed(2)}</p>`;
-    container.innerHTML = html;
+    html += `</ul><p class="total">Total: R$ ${tot.toFixed(2)}</p>`;
+    itensOrcamento.innerHTML = html;
   }
 
-  function removerItem(i) {
-    listaItens.splice(i, 1);
-    atualizarLista();
-  }
+  function remover(i){ listaItens.splice(i,1); atualizarLista(); }
 
   function gerarPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const cliente = document.getElementById("cliente").value;
-    const numero = document.getElementById("numero").value;
-    const data = document.getElementById("data").value;
-    if (!cliente || !numero || !data || listaItens.length === 0) return alert("Preencha os dados e adicione itens");
-
-    doc.setFontSize(12);
-    doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
-    doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
-    doc.text("Rua Jurucê, 78 – Colégio – RJ", 10, 22);
-    doc.text(`Cliente: ${cliente}`, 10, 32);
-    doc.text(`Orçamento: ${numero} | Data: ${data}`, 10, 38);
-
-    let y = 48, total = 0;
-    listaItens.forEach(item => {
-      doc.text(`• ${item.produto} (${item.quantidade}) - ${item.descricao}`, 10, y);
-      doc.text(`Subtotal: R$ ${item.subtotal.toFixed(2)}`, 10, y + 6);
-      y += 14;
-      total += item.subtotal;
+    if(!cliente.value||listaItens.length===0) return alert("Preencha todas informações.");
+    const { jsPDF } = window.jspdf, doc = new jsPDF();
+    doc.text(`Cliente: ${cliente.value}`,10,20);
+    doc.text(`Orçamento: ${numero.value} | Data: ${data.value}`,10,26);
+    let y=36, tot=0;
+    listaItens.forEach(it => {
+      doc.text(`• ${it.nome} x${it.qtd} (${it.desc}) - R$${it.sub.toFixed(2)}`,10,y);
+      tot+=it.sub; y+=6;
     });
+    doc.text(`Total: R$${tot.toFixed(2)}`,10,y+10);
+    doc.save(`${numero.value}.pdf`);
 
-    doc.setFontSize(13);
-    doc.text(`Total Geral: R$ ${total.toFixed(2)}`, 10, y + 6);
-    doc.save(`${numero}_orcamento_METLAL.pdf`);
-
-    // salvar na planilha
-    fetch(urlPlanilha, {
-      method: "POST",
-      body: JSON.stringify({ tipo: "salvar", numero, cliente, data, itens: listaItens })
-    }).then(() => {
-      alert("Orçamento salvo com sucesso!");
-    }).catch(() => {
-      alert("Erro ao salvar orçamento.");
-    });
+    fetch(webAppURL, {
+      method:"POST",
+      body: JSON.stringify({
+        tipo:"salvar",
+        numero:numero.value,
+        cliente: cliente.value,
+        data: data.value,
+        total: tot.toFixed(2),
+        itens: listaItens
+      })
+    }).then(() => alert("Orçamento salvo com sucesso"))
+      .catch(() => alert("Erro ao salvar orçamento"));
   }
 </script>
 </body>
