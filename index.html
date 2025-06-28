@@ -5,12 +5,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orçafácil METLAL</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- LOGO E INFORMAÇÕES DA EMPRESA -->
-  <div class="empresa-info">
-    <img src="logo-metlal.png" alt="Logo METLAL" width="300">
+  <div class="empresa-info" style="text-align: center;">
+    <img src="logo.png" alt="" width="300">
     <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
     <p>CNPJ: 00.000.000/0001-00</p>
     <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
@@ -18,41 +18,33 @@
     <hr />
   </div>
 
-  <!-- FORMULÁRIO DE ORÇAMENTO -->
   <form id="orcamentoForm">
-    <label for="cliente">Nome do Cliente:</label>
-    <input type="text" id="cliente" required>
-
     <label for="produto">Produto:</label>
     <select id="produto">
-      <option value="">Selecione</option>
-      <option value="portao">Portão</option>
-      <option value="guarda corpo">Guarda Corpo</option>
-      <option value="escada caracol">Escada Caracol</option>
-      <option value="janela">Janela</option>
+      <option value="">Carregando...</option>
     </select>
 
     <label for="largura">Largura (m):</label>
-    <input type="number" id="largura" step="0.01" required>
+    <input type="number" id="largura" step="0.01">
 
     <label for="altura">Altura (m):</label>
-    <input type="number" id="altura" step="0.01" required>
+    <input type="number" id="altura" step="0.01">
+
+    <label for="comprimento">Comprimento (m):</label>
+    <input type="number" id="comprimento" step="0.01">
 
     <label for="quantidade">Quantidade:</label>
     <input type="number" id="quantidade" min="1" value="1" required>
 
-    <button type="submit">Gerar Orçamento</button>
+    <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
   </form>
 
-  <!-- RESULTADO -->
-  <div id="resultado" style="margin-top: 20px;"></div>
+  <div id="itensOrcamento" style="margin-top: 20px;"></div>
 
-  <!-- BOTÃO PDF -->
   <div style="margin-top: 20px; text-align: center;">
-    <button onclick="gerarPDF()">Baixar Orçamento em PDF</button>
+    <button onclick="gerarPDF()">📥 Baixar Orçamento em PDF</button>
   </div>
 
-  <!-- JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     document.getElementById("orcamentoForm").addEventListener("submit", function (e) {
@@ -124,3 +116,4 @@
 
 </body>
 </html>
+
