@@ -1,11 +1,36 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orçafácil METLAL</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    form label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    form input, form select, form button {
+      display: block;
+      margin-bottom: 10px;
+      padding: 6px;
+      width: 100%;
+      max-width: 400px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
 
@@ -19,6 +44,17 @@
   </div>
 
   <form id="orcamentoForm">
+    <label for="cliente">Nome do Cliente:</label>
+    <input type="text" id="cliente" required>
+
+    <label for="numero">Número do Orçamento:</label>
+    <input type="text" id="numero" value="MET-20250628-1447" required>
+
+    <label for="data">Data:</label>
+    <input type="date" id="data" value="2025-06-28" required>
+
+    <hr />
+
     <label for="produto">Produto:</label>
     <select id="produto">
       <option value="">Carregando...</option>
@@ -46,7 +82,155 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    let tabelaPreco = {};
+    let listaItens = [];
+    const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
+    const sheetName = "Página1";
+    const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
 
+    function carregarPrecos() {
+      fetch(url)
+        .then(res => res.text())
+        .then(data => {
+          const jsonData = JSON.parse(data.substr(47).slice(0, -2));
+          const rows = jsonData.table.rows;
+          const select = document.getElementById("produto");
+          select.innerHTML = "";
+
+          rows.forEach(row => {
+            const nome = row.c[0]?.v;
+            const preco = parseFloat(row.c[1]?.v);
+            const tipo = row.c[2]?.v?.toLowerCase();
+            if (nome && preco && tipo) {
+              const produtoKey = nome.toLowerCase();
+              tabelaPreco[produtoKey] = { preco, tipo };
+              const option = document.createElement("option");
+              option.value = produtoKey;
+              option.textContent = nome;
+              select.appendChild(option);
+            }
+          });
+        })
+        .catch(err => {
+          alert("Erro ao carregar produtos.");
+          console.error(err);
+        });
+    }
+
+    function adicionarItem() {
+      const produto = document.getElementById("produto").value;
+      const largura = parseFloat(document.getElementById("largura").value);
+      const altura = parseFloat(document.getElementById("altura").value);
+      const comprimento = parseFloat(document.getElementById("comprimento").value);
+      const quantidade = parseInt(document.getElementById("quantidade").value);
+
+      if (!produto || isNaN(quantidade)) {
+        alert("Preencha os campos corretamente.");
+        return;
+      }
+
+      const dadosProduto = tabelaPreco[produto];
+      if (!dadosProduto) {
+        alert("Produto não encontrado.");
+        return;
+      }
+
+      const { preco, tipo } = dadosProduto;
+      let subtotal = 0;
+      let descricao = "";
+
+      if (tipo === "m2") {
+        if (isNaN(largura) || isNaN(altura)) {
+          alert("Informe largura e altura para m².");
+          return;
+        }
+        const area = largura * altura;
+        subtotal = preco * area * quantidade;
+        descricao = `Área: ${area.toFixed(2)} m² | Preço m²: R$ ${preco.toFixed(2)}`;
+      } else if (tipo === "m") {
+        if (isNaN(comprimento)) {
+          alert("Informe o comprimento.");
+          return;
+        }
+        subtotal = preco * comprimento * quantidade;
+        descricao = `Comprimento: ${comprimento.toFixed(2)} m | Preço/m: R$ ${preco.toFixed(2)}`;
+      } else if (tipo === "unidade") {
+        subtotal = preco * quantidade;
+        descricao = `Preço unitário: R$ ${preco.toFixed(2)}`;
+      }
+
+      listaItens.push({ produto, quantidade, descricao, subtotal });
+      atualizarLista();
+    }
+
+    function removerItem(i) {
+      listaItens.splice(i, 1);
+      atualizarLista();
+    }
+
+    function atualizarLista() {
+      const container = document.getElementById("itensOrcamento");
+      let html = "<h3>Itens do Orçamento</h3><ul>";
+      let total = 0;
+
+      listaItens.forEach((item, i) => {
+        html += `<li><strong>${item.produto}</strong> (${item.quantidade}): ${item.descricao} – <strong>Subtotal:</strong> R$ ${item.subtotal.toFixed(2)} 
+        <button onclick="removerItem(${i})">❌ Remover</button></li>`;
+        total += item.subtotal;
+      });
+
+      html += `</ul><p><strong>Total Geral:</strong> R$ ${total.toFixed(2)}</p>`;
+      container.innerHTML = html;
+    }
+
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const cliente = document.getElementById("cliente").value;
+      const numero = document.getElementById("numero").value;
+      const data = document.getElementById("data").value;
+
+      if (!cliente || !numero || !data || listaItens.length === 0) {
+        alert("Preencha os dados e adicione itens.");
+        return;
+      }
+
+      doc.setFontSize(12);
+      doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
+      doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
+      doc.text("Rua Jurucê, 78 – Colégio – RJ", 10, 22);
+      doc.text("CEP: 21545-170", 10, 28);
+
+      doc.text(`Cliente: ${cliente}`, 10, 38);
+      doc.text(`Orçamento Nº: ${numero}`, 10, 44);
+      doc.text(`Data: ${data}`, 10, 50);
+
+      doc.setFontSize(14);
+      doc.text("Itens:", 10, 60);
+      let y = 70;
+      let total = 0;
+
+      listaItens.forEach(item => {
+        doc.setFontSize(12);
+        doc.text(`Produto: ${item.produto}`, 10, y); y += 6;
+        doc.text(`Qtd: ${item.quantidade} | ${item.descricao}`, 10, y); y += 6;
+        doc.text(`Subtotal: R$ ${item.subtotal.toFixed(2)}`, 10, y); y += 10;
+        total += item.subtotal;
+      });
+
+      doc.setFontSize(13);
+      doc.text(`Total Geral: R$ ${total.toFixed(2)}`, 10, y); y += 20;
+
+      doc.line(20, y, 100, y);
+      doc.text("Assinatura do Cliente", 20, y + 6);
+      doc.line(120, y, 200, y);
+      doc.text("Assinatura do Vendedor", 120, y + 6);
+
+      doc.save("orcamento_METLAL.pdf");
+    }
+
+    document.addEventListener("DOMContentLoaded", carregarPrecos);
+  </script>
 </body>
 </html>
