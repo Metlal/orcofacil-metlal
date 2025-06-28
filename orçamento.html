@@ -160,19 +160,29 @@
     doc.line(120, y, 200, y);
     doc.text("Assinatura do Vendedor", 120, y + 6);
 
-    doc.save("orcamento_METLAL.pdf");
+doc.save("orcamento_METLAL.pdf");
 
-    // Salvar na planilha:
-    salvarOrcamentoNaPlanilha({
-      numero,
+  // Enviar dados para a planilha após gerar o PDF
+  enviarParaPlanilha(cliente, numero, data, itensTexto, total);
+}
+
+function enviarParaPlanilha(cliente, numero, data, itensTexto, total) {
+  fetch("https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0jlx68GDBsmjNBkiYPzjgYi7mv-SUE57Gk6kWzarPl8MskACntRsq9e/exec", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
       cliente,
+      numero,
       data,
-      produtos: produtosResumo.join(", "),
-      total: total.toFixed(2),
-      status: "Em aberto",
-      usuario: "projetos"
-    });
-  }
+      itens: itensTexto,
+      total: total.toFixed(2)
+    })
+  
+  .then(res => res.text())
+  .then(msg => console.log("Resposta do Google Apps Script:", msg))
+  .catch(err => console.error("Erro ao enviar para planilha:", err));
 
   document.addEventListener("DOMContentLoaded", carregarPrecos);
 </script>
