@@ -1,179 +1,236 @@
-<script>
-  let tabelaPreco = {};
-  let listaItens = [];
-  const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
-  const produtosSheet = "Página1";
-  const orcamentosSheet = "Orcamentos";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orçafácil METLAL</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
 
-  const urlProdutos = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${produtosSheet}`;
+  <div class="empresa-info" style="text-align: center;">
+    <img src="logo.jpg" alt="Logo METLAL" width="300">
+    <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
+    <p>CNPJ: 00.000.000/0001-00</p>
+    <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
+    <p>CEP: 21545-170</p>
+    <hr />
+  </div>
 
-  function carregarPrecos() {
-    fetch(urlProdutos)
-      .then(res => res.text())
-      .then(data => {
-        const jsonData = JSON.parse(data.substr(47).slice(0, -2));
-        const rows = jsonData.table.rows;
-        const select = document.getElementById("produto");
-        select.innerHTML = "";
+  <form id="orcamentoForm">
+    <label for="cliente">Nome do Cliente:</label>
+    <input id="cliente" type="text" required>
 
-        rows.forEach(row => {
-          const nome = row.c[0]?.v;
-          const preco = parseFloat(row.c[1]?.v);
-          const tipo = row.c[2]?.v?.toLowerCase();
-          if (nome && preco && tipo) {
-            const produtoKey = nome.toLowerCase();
-            tabelaPreco[produtoKey] = { preco, tipo };
-            const option = document.createElement("option");
-            option.value = produtoKey;
-            option.textContent = nome;
-            select.appendChild(option);
-          }
+    <label for="numero">Número do Orçamento:</label>
+    <input type="text" id="numero" readonly>
+
+    <label for="data">Data:</label>
+    <input type="date" id="data" required>
+
+    <label for="produto">Produto:</label>
+    <select id="produto">
+      <option value="">Carregando...</option>
+    </select>
+
+    <label for="largura">Largura (m):</label>
+    <input type="number" id="largura" step="0.01">
+
+    <label for="altura">Altura (m):</label>
+    <input type="number" id="altura" step="0.01">
+
+    <label for="comprimento">Comprimento (m):</label>
+    <input type="number" id="comprimento" step="0.01">
+
+    <label for="quantidade">Quantidade:</label>
+    <input type="number" id="quantidade" min="1" value="1" required>
+
+    <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
+  </form>
+
+  <div id="itensOrcamento" style="margin-top: 20px;"></div>
+
+  <div style="margin-top: 20px; text-align: center;">
+    <button onclick="gerarPDF()">📥 Baixar Orçamento em PDF</button>
+  </div>
+
+  <script>
+    let tabelaPreco = {};
+    let listaItens = [];
+
+    const sheetURL = "https://docs.google.com/spreadsheets/d/1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8/gviz/tq?sheet=Página1";
+    const salvarURL = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0jlx68GDBsmjNBkiYPzjgYi7mv-SUE57Gk6kWzarPl8MskACntRsq9e/exec";
+
+    function carregarPrecos() {
+      fetch(sheetURL)
+        .then(res => res.text())
+        .then(data => {
+          const jsonData = JSON.parse(data.substr(47).slice(0, -2));
+          const rows = jsonData.table.rows;
+          const select = document.getElementById("produto");
+          select.innerHTML = "";
+
+          rows.forEach(row => {
+            const nome = row.c[0]?.v;
+            const preco = parseFloat(row.c[1]?.v);
+            const tipo = row.c[2]?.v?.toLowerCase();
+            if (nome && preco && tipo) {
+              const produtoKey = nome.toLowerCase();
+              tabelaPreco[produtoKey] = { preco, tipo };
+              const option = document.createElement("option");
+              option.value = produtoKey;
+              option.textContent = nome;
+              select.appendChild(option);
+            }
+          });
+        })
+        .catch(err => {
+          alert("Erro ao carregar produtos.");
+          console.error(err);
         });
-      })
-      .catch(err => {
-        alert("Erro ao carregar produtos.");
-        console.error(err);
+    }
+
+    function gerarNumeroOrcamento() {
+      const agora = new Date();
+      const num = `MET-${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${String(agora.getDate()).padStart(2, '0')}-${String(agora.getHours()).padStart(2, '0')}${String(agora.getMinutes()).padStart(2, '0')}`;
+      document.getElementById("numero").value = num;
+      document.getElementById("data").value = agora.toISOString().substr(0, 10);
+    }
+
+    function adicionarItem() {
+      const produto = document.getElementById("produto").value;
+      const largura = parseFloat(document.getElementById("largura").value);
+      const altura = parseFloat(document.getElementById("altura").value);
+      const comprimento = parseFloat(document.getElementById("comprimento").value);
+      const quantidade = parseInt(document.getElementById("quantidade").value);
+
+      if (!produto || isNaN(quantidade)) {
+        alert("Preencha os campos corretamente.");
+        return;
+      }
+
+      const dadosProduto = tabelaPreco[produto];
+      if (!dadosProduto) {
+        alert("Produto não encontrado.");
+        return;
+      }
+
+      const { preco, tipo } = dadosProduto;
+      let subtotal = 0;
+      let descricao = "";
+
+      if (tipo === "m2") {
+        if (isNaN(largura) || isNaN(altura)) {
+          alert("Informe largura e altura para m².");
+          return;
+        }
+        const area = largura * altura;
+        subtotal = preco * area * quantidade;
+        descricao = `Área: ${area.toFixed(2)} m² | Preço m²: R$ ${preco.toFixed(2)}`;
+      } else if (tipo === "m") {
+        if (isNaN(comprimento)) {
+          alert("Informe o comprimento.");
+          return;
+        }
+        subtotal = preco * comprimento * quantidade;
+        descricao = `Comprimento: ${comprimento.toFixed(2)} m | Preço/m: R$ ${preco.toFixed(2)}`;
+      } else if (tipo === "unidade") {
+        subtotal = preco * quantidade;
+        descricao = `Preço unitário: R$ ${preco.toFixed(2)}`;
+      }
+
+      listaItens.push({ produto, quantidade, descricao, subtotal });
+      atualizarLista();
+    }
+
+    function atualizarLista() {
+      const container = document.getElementById("itensOrcamento");
+      let html = "<h3>Itens do Orçamento</h3><ul>";
+      let total = 0;
+
+      listaItens.forEach((item, i) => {
+        html += `<li><strong>${item.produto}</strong> (${item.quantidade}): ${item.descricao} – Subtotal: R$ ${item.subtotal.toFixed(2)} <button onclick="removerItem(${i})">❌</button></li>`;
+        total += item.subtotal;
       });
-  }
 
-  function adicionarItem() {
-    const produto = document.getElementById("produto").value;
-    const largura = parseFloat(document.getElementById("largura").value);
-    const altura = parseFloat(document.getElementById("altura").value);
-    const comprimento = parseFloat(document.getElementById("comprimento").value);
-    const quantidade = parseInt(document.getElementById("quantidade").value);
-
-    if (!produto || isNaN(quantidade)) {
-      alert("Preencha os campos corretamente.");
-      return;
+      html += `</ul><p><strong>Total Geral:</strong> R$ ${total.toFixed(2)}</p>`;
+      container.innerHTML = html;
     }
 
-    const dadosProduto = tabelaPreco[produto];
-    if (!dadosProduto) {
-      alert("Produto não encontrado.");
-      return;
+    function removerItem(i) {
+      listaItens.splice(i, 1);
+      atualizarLista();
     }
 
-    const { preco, tipo } = dadosProduto;
-    let subtotal = 0;
-    let descricao = "";
+    function salvarOrcamento() {
+      const cliente = document.getElementById("cliente").value;
+      const numero = document.getElementById("numero").value;
+      const data = document.getElementById("data").value;
+      const usuario = "projetos";
+      const status = "Em aberto";
+      const total = listaItens.reduce((acc, item) => acc + item.subtotal, 0);
+      const produtos = listaItens.map(item => `${item.produto} (${item.quantidade})`).join(", ");
 
-    if (tipo === "m2") {
-      if (isNaN(largura) || isNaN(altura)) {
-        alert("Informe largura e altura para m².");
-        return;
-      }
-      const area = largura * altura;
-      subtotal = preco * area * quantidade;
-      descricao = `Área: ${area.toFixed(2)} m² | Preço m²: R$ ${preco.toFixed(2)}`;
-    } else if (tipo === "m") {
-      if (isNaN(comprimento)) {
-        alert("Informe o comprimento.");
-        return;
-      }
-      subtotal = preco * comprimento * quantidade;
-      descricao = `Comprimento: ${comprimento.toFixed(2)} m | Preço/m: R$ ${preco.toFixed(2)}`;
-    } else if (tipo === "unidade") {
-      subtotal = preco * quantidade;
-      descricao = `Preço unitário: R$ ${preco.toFixed(2)}`;
-    }
+      const dados = {
+        cliente, numero, data, produtos,
+        total: total.toFixed(2), status, usuario
+      };
 
-    listaItens.push({ produto, quantidade, descricao, subtotal });
-    atualizarLista();
-  }
-
-  function removerItem(i) {
-    listaItens.splice(i, 1);
-    atualizarLista();
-  }
-
-  function atualizarLista() {
-    const container = document.getElementById("itensOrcamento");
-    let html = "<h3>Itens do Orçamento</h3><ul>";
-    let total = 0;
-
-    listaItens.forEach((item, i) => {
-      html += `<li><strong>${item.produto}</strong> (${item.quantidade}): ${item.descricao} – <strong>Subtotal:</strong> R$ ${item.subtotal.toFixed(2)} 
-        <button onclick="removerItem(${i})">❌ Remover</button></li>`;
-      total += item.subtotal;
-    });
-
-    html += `</ul><p><strong>Total Geral:</strong> R$ ${total.toFixed(2)}</p>`;
-    container.innerHTML = html;
-  }
-
-  async function salvarOrcamentoNaPlanilha(dados) {
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0jlx68GDBsmjNBkiYPzjgYi7mv-SUE57Gk6kWzarPl8MskACntRsq9e/exec"; // <-- você vai substituir isso pelo URL real do App Script
-
-    try {
-      await fetch(scriptURL, {
+      fetch(salvarURL, {
         method: "POST",
         body: JSON.stringify(dados),
-        headers: { "Content-Type": "application/json" }
-      });
-    } catch (error) {
-      console.error("Erro ao salvar no Google Sheets:", error);
-    }
-  }
-
-  function gerarPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const cliente = document.getElementById("cliente").value;
-    const numero = document.getElementById("numero").value;
-    const data = document.getElementById("data").value;
-
-    if (!cliente || !numero || !data || listaItens.length === 0) {
-      alert("Preencha os dados e adicione itens.");
-      return;
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.text())
+      .then(resp => console.log("✅ Salvo com sucesso:", resp))
+      .catch(err => console.error("Erro:", err));
     }
 
-    doc.setFontSize(12);
-    doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
-    doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
-    doc.text("Rua Jurucê, 78 – Colégio – RJ", 10, 22);
-    doc.text("CEP: 21545-170", 10, 28);
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const cliente = document.getElementById("cliente").value;
+      const numero = document.getElementById("numero").value;
+      const data = document.getElementById("data").value;
 
-    doc.text(`Cliente: ${cliente}`, 10, 38);
-    doc.text(`Orçamento Nº: ${numero}`, 10, 44);
-    doc.text(`Data: ${data}`, 10, 50);
+      if (!cliente || !numero || !data || listaItens.length === 0) {
+        alert("Preencha os dados e adicione itens.");
+        return;
+      }
 
-    doc.setFontSize(14);
-    doc.text("Itens:", 10, 60);
-    let y = 70;
-    let total = 0;
-    let produtosResumo = [];
-
-    listaItens.forEach(item => {
       doc.setFontSize(12);
-      doc.text(`Produto: ${item.produto}`, 10, y); y += 6;
-      doc.text(`Qtd: ${item.quantidade} | ${item.descricao}`, 10, y); y += 6;
-      doc.text(`Subtotal: R$ ${item.subtotal.toFixed(2)}`, 10, y); y += 10;
-      total += item.subtotal;
-      produtosResumo.push(`${item.produto} (${item.quantidade})`);
+      doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
+      doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
+      doc.text("Rua Jurucê, 78 – Colégio – RJ", 10, 22);
+      doc.text("CEP: 21545-170", 10, 28);
+
+      doc.text(`Cliente: ${cliente}`, 10, 38);
+      doc.text(`Orçamento Nº: ${numero}`, 10, 44);
+      doc.text(`Data: ${data}`, 10, 50);
+
+      let y = 60;
+      let total = 0;
+      listaItens.forEach(item => {
+        doc.text(`Produto: ${item.produto} (${item.quantidade})`, 10, y); y += 6;
+        doc.text(`${item.descricao}`, 10, y); y += 6;
+        doc.text(`Subtotal: R$ ${item.subtotal.toFixed(2)}`, 10, y); y += 10;
+        total += item.subtotal;
+      });
+
+      doc.text(`Total Geral: R$ ${total.toFixed(2)}`, 10, y); y += 20;
+      doc.line(20, y, 100, y); doc.text("Assinatura do Cliente", 20, y + 6);
+      doc.line(120, y, 200, y); doc.text("Assinatura do Vendedor", 120, y + 6);
+
+      salvarOrcamento();
+      doc.save("orcamento_METLAL.pdf");
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      carregarPrecos();
+      gerarNumeroOrcamento();
     });
-
-    doc.setFontSize(13);
-    doc.text(`Total Geral: R$ ${total.toFixed(2)}`, 10, y); y += 20;
-
-    doc.line(20, y, 100, y);
-    doc.text("Assinatura do Cliente", 20, y + 6);
-    doc.line(120, y, 200, y);
-    doc.text("Assinatura do Vendedor", 120, y + 6);
-
-    doc.save("orcamento_METLAL.pdf");
-
-    // Salvar na planilha:
-    salvarOrcamentoNaPlanilha({
-      numero,
-      cliente,
-      data,
-      produtos: produtosResumo.join(", "),
-      total: total.toFixed(2),
-      status: "Em aberto",
-      usuario: "projetos"
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", carregarPrecos);
-</script>
+  </script>
+</body>
+</html>
