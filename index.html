@@ -10,7 +10,7 @@
 <body>
 
   <div class="empresa-info" style="text-align: center;">
-    <img src="logo.png" alt="" width="300">
+    <img src="logo-metlal.png" alt="Logo METLAL" width="300">
     <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
     <p>CNPJ: 00.000.000/0001-00</p>
     <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
@@ -46,74 +46,7 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script>
-    document.getElementById("orcamentoForm").addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const cliente = document.getElementById("cliente").value;
-      const produto = document.getElementById("produto").value;
-      const largura = parseFloat(document.getElementById("largura").value);
-      const altura = parseFloat(document.getElementById("altura").value);
-      const quantidade = parseInt(document.getElementById("quantidade").value);
-
-      if (!cliente || !produto || isNaN(largura) || isNaN(altura) || isNaN(quantidade)) {
-        alert("Preencha todos os campos corretamente.");
-        return;
-      }
-
-      const area = largura * altura * quantidade;
-      const valorUnitario = 300; // valor fictício por m²
-      const valor = area * valorUnitario;
-
-      const dataAtual = new Date();
-      const dataFormatada = dataAtual.toISOString().slice(0, 10).replace(/-/g, '');
-      const numeroAleatorio = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      const referencia = `ORC-${dataFormatada}-${numeroAleatorio}`;
-
-      let resultadoHTML = `
-      <strong>Referência:</strong> ${referencia}<br>
-      <strong>Cliente:</strong> ${cliente}<br>
-      <strong>Produto:</strong> ${produto}<br>
-      <strong>Largura:</strong> ${largura} m<br>
-      <strong>Altura:</strong> ${altura} m<br>
-      <strong>Quantidade:</strong> ${quantidade}<br>
-      <strong>Área Total:</strong> ${area.toFixed(2)} m²<br>
-      <strong>Valor Total:</strong> R$ ${valor.toFixed(2)}<br>
-      `;
-
-      document.getElementById("resultado").innerHTML = resultadoHTML;
-    });
-
-    function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const resultadoHTML = document.getElementById("resultado").innerText;
-      if (!resultadoHTML) {
-        alert("Nenhum orçamento gerado ainda.");
-        return;
-      }
-
-      doc.setFontSize(12);
-      doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
-      doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
-      doc.text("Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ", 10, 22);
-      doc.text("CEP: 21545-170", 10, 28);
-
-      doc.setFontSize(14);
-      doc.text("Orçamento Gerado:", 10, 40);
-
-      const texto = resultadoHTML.split('\n');
-      let y = 50;
-      texto.forEach(linha => {
-        doc.text(linha.trim(), 10, y);
-        y += 8;
-      });
-
-      doc.save("orcamento_METLAL.pdf");
-    }
-  </script>
+  <script src="script.js"></script>
 
 </body>
 </html>
-
