@@ -5,11 +5,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orçafácil METLAL</title>
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="empresa-info" style="text-align: center;">
+  <!-- LOGO E INFORMAÇÕES DA EMPRESA -->
+  <div class="empresa-info">
     <img src="logo-metlal.png" alt="Logo METLAL" width="300">
     <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
     <p>CNPJ: 00.000.000/0001-00</p>
@@ -18,35 +18,109 @@
     <hr />
   </div>
 
+  <!-- FORMULÁRIO DE ORÇAMENTO -->
   <form id="orcamentoForm">
+    <label for="cliente">Nome do Cliente:</label>
+    <input type="text" id="cliente" required>
+
     <label for="produto">Produto:</label>
     <select id="produto">
-      <option value="">Carregando...</option>
+      <option value="">Selecione</option>
+      <option value="portao">Portão</option>
+      <option value="guarda corpo">Guarda Corpo</option>
+      <option value="escada caracol">Escada Caracol</option>
+      <option value="janela">Janela</option>
     </select>
 
     <label for="largura">Largura (m):</label>
-    <input type="number" id="largura" step="0.01">
+    <input type="number" id="largura" step="0.01" required>
 
     <label for="altura">Altura (m):</label>
-    <input type="number" id="altura" step="0.01">
-
-    <label for="comprimento">Comprimento (m):</label>
-    <input type="number" id="comprimento" step="0.01">
+    <input type="number" id="altura" step="0.01" required>
 
     <label for="quantidade">Quantidade:</label>
     <input type="number" id="quantidade" min="1" value="1" required>
 
-    <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
+    <button type="submit">Gerar Orçamento</button>
   </form>
 
-  <div id="itensOrcamento" style="margin-top: 20px;"></div>
+  <!-- RESULTADO -->
+  <div id="resultado" style="margin-top: 20px;"></div>
 
+  <!-- BOTÃO PDF -->
   <div style="margin-top: 20px; text-align: center;">
-    <button onclick="gerarPDF()">📥 Baixar Orçamento em PDF</button>
+    <button onclick="gerarPDF()">Baixar Orçamento em PDF</button>
   </div>
 
+  <!-- JS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    document.getElementById("orcamentoForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const cliente = document.getElementById("cliente").value;
+      const produto = document.getElementById("produto").value;
+      const largura = parseFloat(document.getElementById("largura").value);
+      const altura = parseFloat(document.getElementById("altura").value);
+      const quantidade = parseInt(document.getElementById("quantidade").value);
+
+      if (!cliente || !produto || isNaN(largura) || isNaN(altura) || isNaN(quantidade)) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+      }
+
+      const area = largura * altura * quantidade;
+      const valorUnitario = 300; // valor fictício por m²
+      const valor = area * valorUnitario;
+
+      const dataAtual = new Date();
+      const dataFormatada = dataAtual.toISOString().slice(0, 10).replace(/-/g, '');
+      const numeroAleatorio = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const referencia = `ORC-${dataFormatada}-${numeroAleatorio}`;
+
+      let resultadoHTML = `
+      <strong>Referência:</strong> ${referencia}<br>
+      <strong>Cliente:</strong> ${cliente}<br>
+      <strong>Produto:</strong> ${produto}<br>
+      <strong>Largura:</strong> ${largura} m<br>
+      <strong>Altura:</strong> ${altura} m<br>
+      <strong>Quantidade:</strong> ${quantidade}<br>
+      <strong>Área Total:</strong> ${area.toFixed(2)} m²<br>
+      <strong>Valor Total:</strong> R$ ${valor.toFixed(2)}<br>
+      `;
+
+      document.getElementById("resultado").innerHTML = resultadoHTML;
+    });
+
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const resultadoHTML = document.getElementById("resultado").innerText;
+      if (!resultadoHTML) {
+        alert("Nenhum orçamento gerado ainda.");
+        return;
+      }
+
+      doc.setFontSize(12);
+      doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, 10);
+      doc.text("CNPJ: 00.000.000/0001-00", 10, 16);
+      doc.text("Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ", 10, 22);
+      doc.text("CEP: 21545-170", 10, 28);
+
+      doc.setFontSize(14);
+      doc.text("Orçamento Gerado:", 10, 40);
+
+      const texto = resultadoHTML.split('\n');
+      let y = 50;
+      texto.forEach(linha => {
+        doc.text(linha.trim(), 10, y);
+        y += 8;
+      });
+
+      doc.save("orcamento_METLAL.pdf");
+    }
+  </script>
 
 </body>
 </html>
