@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -33,15 +34,13 @@
     function validarLogin() {
       const usuario = document.getElementById("usuario").value.toLowerCase();
       const senha = document.getElementById("senha").value;
-
       const usuariosValidos = {
         "projetos": "123456",
         "orcamentos": "123456"
       };
-
       if (usuariosValidos[usuario] && usuariosValidos[usuario] === senha) {
         localStorage.setItem("usuarioLogado", usuario);
-        window.location.href = "orcamento.html"; // redireciona para o sistema principal
+        window.location.href = "orcamento.html";
         return false;
       } else {
         document.getElementById("erroLogin").textContent = "Usuário ou senha incorretos.";
