@@ -62,7 +62,7 @@
 </div>
 
 <script>
-  const webAppURL = "https://script.google.com/macros/s/AKfycbwQpRTPCsZhNzJjH1CoDnf6meuHkBnNhIrEpxsGhpBmbcUXoC33KAtUw4pmrgsNHu5y/exec";
+  const webAppURL = "https://script.google.com/macros/s/AKfycbwIt0xHDRTJyaDQCoUtK5_So7TX3t9elQsTNkWBM-ECaMURG5VAq3AvGVOHTgq6zhLb/exec";
   const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
   const sheetName = "Página1";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
@@ -206,12 +206,13 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tipo: "salvar",
-        numero: numero.value,
-        cliente: cliente.value,
-        data: data.value,
-        total: tot.toFixed(2),
-        produtos: produtosTexto,
-        status: "Pendente"
+    numero: numero.value,
+    cliente: cliente.value,
+    data: data.value,
+    total: tot.toFixed(2),
+    produtos: produtosTexto,
+    usuario: usuario.value,
+    status: "Pendente"
       })
     })
     .then(() => alert("Orçamento salvo com sucesso!"))
