@@ -118,45 +118,50 @@
   }
 
   function gerarPDF() {
-    if (!cliente.value || lista.length === 0) return alert("Preencha os campos e adicione ao menos um item.");
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y = 20, total = 0;
-
-    doc.text(Cliente: ${cliente.value}, 10, y); y += 10;
-    doc.text(Orçamento: ${numero.value}, 10, y); y += 10;
-    doc.text(Data: ${data.value}, 10, y); y += 10;
-
-    lista.forEach(it => {
-      doc.text(- ${it.nome} x${it.qtd} - R$ ${it.subtotal.toFixed(2)}, 10, y);
-      total += it.subtotal;
-      y += 8;
-    });
-
-    doc.text(Total: R$ ${total.toFixed(2)}, 10, y + 10);
-    doc.save(${numero.value}.pdf);
-
-    const produtosTexto = lista.map(i => ${i.nome} (${i.qtd})).join(" | ");
-
-   fetch(webAppURL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    tipo: "salvar",
-    numero: numero.value,
-    cliente: cliente.value,
-    data: data.value,
-    produtos: produtosTexto,
-    total: total.toFixed(2),
-    status: "Pendente",
-    usuario: "admin"
-  })
-})
-.then(r => r.text())
-.then(res => alert(res))
-.catch(err => alert("Erro ao salvar orçamento: " + err.message));
+  if (!cliente.value || listaItens.length === 0) {
+    return alert("Preencha todas as informações e adicione pelo menos um item.");
   }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.text(`Cliente: ${cliente.value}`, 10, 20);
+  doc.text(`Orçamento: ${numero.value} | Data: ${data.value}`, 10, 26);
+
+  let y = 36, total = 0;
+  listaItens.forEach(it => {
+    doc.text(`• ${it.nome} x${it.qtd} (${it.desc}) - R$${it.sub.toFixed(2)}`, 10, y);
+    total += it.sub;
+    y += 6;
+  });
+
+  doc.text(`Total: R$${total.toFixed(2)}`, 10, y + 10);
+  doc.save(`${numero.value}.pdf`);
+
+  // Montar string de produtos
+  const produtosTexto = listaItens.map(item => {
+    return `${item.nome} (${item.qtd}) - ${item.desc}`;
+  }).join(" | ");
+
+  // Enviar para planilha
+  fetch(webAppURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      tipo: "salvar",
+      numero: numero.value,
+      cliente: cliente.value,
+      data: data.value,
+      produtos: produtosTexto,
+      total: total.toFixed(2),
+      status: "Pendente",
+      usuario: usuario.value || "sem usuário"
+    })
+  })
+  .then(r => r.text())
+  .then(res => alert(res))
+  .catch(err => alert("Erro ao salvar orçamento: " + err.message));
+}
 </script>
 </body>
 </html>
