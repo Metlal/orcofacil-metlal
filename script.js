@@ -1,44 +1,12 @@
-const tabelaPreco = {};
-const tabelaTipo = {};
+
+const tabelaPreco = {
+  portao: 300,
+  "guarda corpo": 280,
+  "escada caracol": 350,
+  janela: 200,
+};
+
 const itens = [];
-
-const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
-const sheetName = "Página1";
-const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
-
-function carregarProdutos() {
-  fetch(url)
-    .then(res => res.text())
-    .then(data => {
-      const json = JSON.parse(data.substr(47).slice(0, -2));
-      const produtos = json.table.rows.map(row => {
-        const produto = row.c[0]?.v;
-        const preco = parseFloat(row.c[1]?.v);
-        const tipo = row.c[2]?.v?.toLowerCase();
-        if (produto && preco && tipo) {
-          tabelaPreco[produto.toLowerCase()] = preco;
-          tabelaTipo[produto.toLowerCase()] = tipo;
-          return produto;
-        }
-        return null;
-      }).filter(Boolean);
-
-      const select = document.getElementById("produto");
-      select.innerHTML = "<option value=''>Selecione</option>";
-      produtos.forEach(prod => {
-        const opt = document.createElement("option");
-        opt.value = prod.toLowerCase();
-        opt.textContent = prod;
-        select.appendChild(opt);
-      });
-    })
-    .catch(err => {
-      console.error("Erro ao carregar produtos:", err);
-      alert("Erro ao carregar produtos da planilha.");
-    });
-}
-
-carregarProdutos();
 
 function adicionarItem() {
   const cliente = document.getElementById("cliente").value;
@@ -48,47 +16,28 @@ function adicionarItem() {
   const comprimento = parseFloat(document.getElementById("comprimento").value);
   const quantidade = parseInt(document.getElementById("quantidade").value);
 
-  if (!cliente || !produto || isNaN(quantidade)) {
+  if (!cliente || !produto || isNaN(largura) || isNaN(altura) || isNaN(quantidade)) {
     alert("Preencha todos os campos corretamente.");
     return;
   }
 
-  const tipo = tabelaTipo[produto];
+  const area = largura * altura * quantidade;
   const precoUnitario = tabelaPreco[produto] || 0;
-  let unidade = "";
-  let baseCalculo = 0;
-
-  if (tipo === "m²") {
-    if (isNaN(largura) || isNaN(altura)) return alert("Informe largura e altura.");
-    baseCalculo = largura * altura * quantidade;
-    unidade = "m²";
-  } else if (tipo === "metro") {
-    if (isNaN(comprimento)) return alert("Informe o comprimento.");
-    baseCalculo = comprimento * quantidade;
-    unidade = "m";
-  } else if (tipo === "unidade") {
-    baseCalculo = quantidade;
-    unidade = "un";
-  } else {
-    return alert("Tipo de produto desconhecido.");
-  }
-
-  const valor = baseCalculo * precoUnitario;
+  const valor = area * precoUnitario;
 
   const item = {
     produto,
-    tipo,
-    largura: largura || 0,
-    altura: altura || 0,
-    comprimento: comprimento || 0,
+    largura,
+    altura,
+    comprimento,
     quantidade,
-    unidade,
-    base: baseCalculo.toFixed(2),
+    area: area.toFixed(2),
     valor: valor.toFixed(2),
   };
 
   itens.push(item);
 
+  // Gerar cabeçalho com cliente e referência
   const dataAtual = new Date();
   const dataFormatada = dataAtual.toISOString().slice(0, 10).replace(/-/g, '');
   const numeroAleatorio = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -100,6 +49,7 @@ function adicionarItem() {
     <hr>
   `;
 
+  // Salva para uso no PDF
   window.clienteAtual = cliente;
   window.referenciaAtual = referencia;
 
@@ -114,24 +64,17 @@ function renderizarItens() {
   }
 
   let html = "<table border='1' width='100%' cellpadding='5' cellspacing='0'>";
-  html += "<tr><th>Produto</th><th>Tipo</th><th>Largura</th><th>Altura</th><th>Comprimento</th><th>Qtd</th><th>Base</th><th>Valor</th></tr>";
+  html += "<tr><th>Produto</th><th>Largura</th><th>Altura</th><th>Comprimento</th><th>Qtd</th><th>Área</th><th>Valor</th></tr>";
   itens.forEach(item => {
     html += `<tr>
       <td>${item.produto}</td>
-      <td>${item.tipo}</td>
-      <td>${item.largura || "-"}</td>
-      <td>${item.altura || "-"}</td>
-      <td>${item.comprimento || "-"}</td>
+      <td>${item.largura}</td>
+      <td>${item.altura}</td>
+      <td>${item.comprimento || '-'}</td>
       <td>${item.quantidade}</td>
-      <td>${item.base} ${item.unidade}</td>
+      <td>${item.area} m²</td>
       <td>R$ ${item.valor}</td>
-    </tr>`const total = itens.reduce((acc, item) => acc + parseFloat(item.valor), 0);
-  html += `<tr>
-    <td colspan="7" style="text-align:right;"><strong>Total:</strong></td>
-    <td><strong>R$ ${total.toFixed(2)}</strong></td>
-  </tr>`;
-
-  container.innerHTML = html;
+    </tr>`;
   });
   html += "</table>";
 
@@ -155,8 +98,8 @@ function gerarPDF() {
   let y = 60;
   itens.forEach((item, index) => {
     doc.setFontSize(12);
-    doc.text(`Item ${index + 1}: ${item.produto} (${item.tipo})`, 10, y);
-    doc.text(`Base: ${item.base} ${item.unidade} | Valor: R$ ${item.valor}`, 10, y + 6);
+    doc.text(`Item ${index + 1}: ${item.produto}, ${item.largura}x${item.altura} (${item.quantidade} un)`, 10, y);
+    doc.text(`Área: ${item.area} m² | Valor: R$ ${item.valor}`, 10, y + 6);
     y += 14;
   });
 
