@@ -1,12 +1,42 @@
 
-const tabelaPreco = {
-  portao: 300,
-  "guarda corpo": 280,
-  "escada caracol": 350,
-  janela: 200,
-};
-
+const tabelaPreco = {};
 const itens = [];
+
+const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
+const sheetName = "Página1";
+const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
+
+function carregarProdutos() {
+  fetch(url)
+    .then(res => res.text())
+    .then(data => {
+      const json = JSON.parse(data.substr(47).slice(0, -2));
+      const produtos = json.table.rows.map(row => {
+        const produto = row.c[0]?.v;
+        const preco = parseFloat(row.c[1]?.v);
+        if (produto && preco) {
+          tabelaPreco[produto.toLowerCase()] = preco;
+          return produto;
+        }
+        return null;
+      }).filter(Boolean);
+
+      const select = document.getElementById("produto");
+      select.innerHTML = "<option value=''>Selecione</option>";
+      produtos.forEach(prod => {
+        const opt = document.createElement("option");
+        opt.value = prod.toLowerCase();
+        opt.textContent = prod;
+        select.appendChild(opt);
+      });
+    })
+    .catch(err => {
+      console.error("Erro ao carregar produtos:", err);
+      alert("Erro ao carregar produtos da planilha.");
+    });
+}
+
+carregarProdutos();
 
 function adicionarItem() {
   const cliente = document.getElementById("cliente").value;
@@ -37,7 +67,6 @@ function adicionarItem() {
 
   itens.push(item);
 
-  // Gerar cabeçalho com cliente e referência
   const dataAtual = new Date();
   const dataFormatada = dataAtual.toISOString().slice(0, 10).replace(/-/g, '');
   const numeroAleatorio = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
@@ -49,7 +78,6 @@ function adicionarItem() {
     <hr>
   `;
 
-  // Salva para uso no PDF
   window.clienteAtual = cliente;
   window.referenciaAtual = referencia;
 
