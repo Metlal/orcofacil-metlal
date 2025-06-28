@@ -18,9 +18,10 @@
 <body>
 <div class="container">
   <h2>Orçafácil METLAL</h2>
+
   <label>Cliente:</label>
   <input id="cliente" type="text" />
-  
+
   <label>Número do Orçamento:</label>
   <input id="numero" type="text" readonly />
 
@@ -43,10 +44,10 @@
 </div>
 
 <script>
-  const webAppURL = "https://script.google.com/macros/s/AKfycbxPIVVkLuAbMiy7SJsoC7rqo_1uBN17iAu9I3e3lwy1Nkg8kUUUrz-LfUz4UhgHTqm_/exec";
+  const webAppURL = "https://script.google.com/macros/s/AKfycbwIt0xHDRTJyaDQCoUtK5_So7TX3t9elQsTNkWBM-ECaMURG5VAq3AvGVOHTgq6zhLb/exec";
   const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
   const sheetName = "Produtos";
-  const sheetURL = https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName};
+  const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
 
   const produto = document.getElementById("produto");
   const cliente = document.getElementById("cliente");
@@ -68,7 +69,7 @@
     const ano = hoje.getFullYear().toString().slice(-2);
     const mes = (hoje.getMonth() + 1).toString().padStart(2, "0");
     const dia = hoje.getDate().toString().padStart(2, "0");
-    numero.value = MT${ano}${mes}${dia}-${String(contador++).padStart(3, "0")};
+    numero.value = `MT${ano}${mes}${dia}-${String(contador++).padStart(3, "0")}`;
     data.value = hoje.toISOString().split("T")[0];
   }
 
@@ -83,7 +84,7 @@
           const preco = parseFloat(row.c[1]?.v || 0);
           if (nome) {
             produtos[nome] = preco;
-            produto.innerHTML += <option value="${nome}">${nome}</option>;
+            produto.innerHTML += `<option value="${nome}">${nome}</option>`;
           }
         });
       });
@@ -105,11 +106,11 @@
     let html = "<ul>", total = 0;
     lista.forEach((item, i) => {
       total += item.subtotal;
-      html += <li>${item.nome} x${item.qtd} - R$ ${item.subtotal.toFixed(2)} <button onclick="remover(${i})">❌</button></li>;
+      html += `<li>${item.nome} x${item.qtd} - R$ ${item.subtotal.toFixed(2)} <button onclick="remover(${i})">❌</button></li>`;
     });
     html += "</ul>";
     itensDiv.innerHTML = html;
-    totalDisplay.textContent = Total: R$ ${total.toFixed(2)};
+    totalDisplay.textContent = `Total: R$ ${total.toFixed(2)}`;
   }
 
   function remover(i) {
@@ -118,50 +119,46 @@
   }
 
   function gerarPDF() {
-  if (!cliente.value || listaItens.length === 0) {
-    return alert("Preencha todas as informações e adicione pelo menos um item.");
-  }
+    if (!cliente.value || lista.length === 0) {
+      return alert("Preencha todas as informações e adicione pelo menos um item.");
+    }
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
 
-  doc.text(`Cliente: ${cliente.value}`, 10, 20);
-  doc.text(`Orçamento: ${numero.value} | Data: ${data.value}`, 10, 26);
+    doc.text(`Cliente: ${cliente.value}`, 10, 20);
+    doc.text(`Orçamento: ${numero.value} | Data: ${data.value}`, 10, 26);
 
-  let y = 36, total = 0;
-  listaItens.forEach(it => {
-    doc.text(`• ${it.nome} x${it.qtd} (${it.desc}) - R$${it.sub.toFixed(2)}`, 10, y);
-    total += it.sub;
-    y += 6;
-  });
+    let y = 36, total = 0;
+    lista.forEach(it => {
+      doc.text(`• ${it.nome} x${it.qtd} - R$${it.subtotal.toFixed(2)}`, 10, y);
+      total += it.subtotal;
+      y += 6;
+    });
 
-  doc.text(`Total: R$${total.toFixed(2)}`, 10, y + 10);
-  doc.save(`${numero.value}.pdf`);
+    doc.text(`Total: R$${total.toFixed(2)}`, 10, y + 10);
+    doc.save(`${numero.value}.pdf`);
 
-  // Montar string de produtos
-  const produtosTexto = listaItens.map(item => {
-    return `${item.nome} (${item.qtd}) - ${item.desc}`;
-  }).join(" | ");
+    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd})`).join(" | ");
 
-  // Enviar para planilha
-  fetch(webAppURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tipo: "salvar",
-      numero: numero.value,
-      cliente: cliente.value,
-      data: data.value,
-      produtos: produtosTexto,
-      total: total.toFixed(2),
-      status: "Pendente",
-      usuario: usuario.value || "sem usuário"
+    fetch(webAppURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: "salvar",
+        numero: numero.value,
+        cliente: cliente.value,
+        data: data.value,
+        produtos: produtosTexto,
+        total: total.toFixed(2),
+        status: "Pendente",
+        usuario: "admin"
+      })
     })
-  })
-  .then(r => r.text())
-  .then(res => alert(res))
-  .catch(err => alert("Erro ao salvar orçamento: " + err.message));
-}
+    .then(r => r.text())
+    .then(res => alert("Orçamento salvo com sucesso!"))
+    .catch(err => alert("Erro ao salvar orçamento: " + err.message));
+  }
 </script>
 </body>
 </html>
