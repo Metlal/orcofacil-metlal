@@ -1,186 +1,296 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Orçafácil METLAL</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    /* Estilo moderno */
-    body { font-family: 'Inter', sans-serif; background-color:#f4f6f8; margin:0; padding:0; color:#333; }
-    .container { max-width:850px; margin:30px auto; background:#fff; border-radius:12px; padding:30px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-    .empresa-info { text-align:center; margin-bottom:20px; }
-    .empresa-info img { max-width:200px; margin-bottom:10px; }
-    h2 { color:#0056b3; }
-    label { display:block; margin-top:10px; font-weight:600; }
-    input, select { width:100%; padding:10px; border:1px solid #ccc; border-radius:8px; margin-bottom:14px; font-size:14px; }
-    button { background:#0056b3; color:#fff; padding:12px 20px; border:none; border-radius:8px; cursor:pointer; font-weight:600; transition: background .3s; }
-    button:hover { background:#003f88; }
-    #itensOrcamento { margin-top:30px; background:#f1f3f5; border-radius:10px; padding:20px; }
-    ul { padding-left:20px; }
-    ul li { margin-bottom:12px; line-height:1.5; }
-    .total { font-size:18px; font-weight:bold; color:green; }
-    .assinaturas { margin-top:40px; }
-    .assinaturas div { display:inline-block; width:45%; text-align:center; margin-top:40px;}
-    .assinaturas div hr { border:0; border-top:1px solid #ccc; margin-bottom:6px;}
-    @media (max-width:600px){ .assinaturas div { display:block; width:100%; margin-bottom:40px; } }
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f6f8;
+      color: #333;
+    }
+    .container {
+      max-width: 850px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .empresa-info {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .empresa-info img {
+      max-width: 200px;
+      margin-bottom: 10px;
+    }
+    h1, h2, h3 {
+      color: #0056b3;
+    }
+    label {
+      font-weight: 600;
+      display: block;
+      margin: 10px 0 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #0056b3;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #003f88;
+    }
+    #itensOrcamento {
+      margin-top: 30px;
+      background: #f1f3f5;
+      border-radius: 10px;
+      padding: 20px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    ul li {
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      color: green;
+    }
+    .assinaturas {
+      margin-top: 40px;
+    }
+    .assinaturas div {
+      display: inline-block;
+      width: 45%;
+      text-align: center;
+      margin-top: 40px;
+    }
+    .assinaturas div hr {
+      border: 0;
+      border-top: 1px solid #ccc;
+      margin-bottom: 6px;
+    }
+    @media (max-width: 600px) {
+      .assinaturas div {
+        display: block;
+        width: 100%;
+        margin-bottom: 40px;
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div class="empresa-info">
+      <img src="logo-metlal.png" alt="Logo METLAL">
+      <h2>METLAL METALÚRGICA LADEIRA LTDA</h2>
+      <p>CNPJ: 00.000.000/0001-00</p>
+      <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
+      <p>CEP: 21545-170</p>
+    </div>
 
-<div class="container">
-  <div class="empresa-info">
-    <img src="logo-metlal.png" alt="Logo METLAL">
-    <h2></h2>
-    <p>CNPJ: 00.000.000/0001-00</p>
-    <p>Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ</p>
-    <p>CEP: 21545‑170</p>
+    <form id="orcamentoForm">
+      <label for="cliente">Nome do Cliente:</label>
+      <input type="text" id="cliente" required>
+
+      <label for="numero">Número do Orçamento:</label>
+      <input type="text" id="numero" readonly>
+
+      <label for="data">Data:</label>
+      <input type="date" id="data" readonly>
+
+      <label for="produto">Produto:</label>
+      <select id="produto">
+        <option value="">Carregando...</option>
+      </select>
+
+      <label for="largura">Largura (m):</label>
+      <input type="number" id="largura" step="0.01">
+
+      <label for="altura">Altura (m):</label>
+      <input type="number" id="altura" step="0.01">
+
+      <label for="comprimento">Comprimento (m):</label>
+      <input type="number" id="comprimento" step="0.01">
+
+      <label for="quantidade">Quantidade:</label>
+      <input type="number" id="quantidade" min="1" value="1" required>
+
+      <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
+    </form>
+
+    <div id="itensOrcamento"></div>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <button onclick="gerarPDF()">📥 Baixar Orçamento em PDF</button>
+    </div>
   </div>
 
-  <form id="orcamentoForm" onsubmit="return false;">
-    <label>Nome do Cliente:</label>
-    <input id="cliente" type="text" required>
+  <script>
+    const tabelaPreco = {};
+    let itens = [];
 
-    <label>Nº do Orçamento:</label>
-    <input id="numero" type="text" readonly>
+    const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
+    const sheetName = "Página1";
+    const url = https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName};
 
-    <label>Data:</label>
-    <input id="data" type="date" readonly>
+    window.onload = () => {
+      carregarPrecos();
+      document.getElementById("data").value = new Date().toISOString().split('T')[0];
+      document.getElementById("numero").value = "ORC-" + Date.now().toString().slice(-6);
+    };
 
-    <label>Produto:</label>
-    <select id="produto"><option value="">Carregando...</option></select>
-
-    <label>Largura (m):</label><input id="largura" type="number" step="0.01">
-    <label>Altura (m):</label><input id="altura" type="number" step="0.01">
-    <label>Comprimento (m):</label><input id="comprimento" type="number" step="0.01">
-    <label>Quantidade:</label><input id="quantidade" type="number" min="1" value="1" required>
-
-    <button type="button" onclick="adicionarItem()">➕ Adicionar ao Orçamento</button>
-  </form>
-
-  <div id="itensOrcamento"></div>
-
-  <div style="text-align:center; margin-top:20px;">
-    <button onclick="gerarPDF()">📥 Baixar PDF</button>
-  </div>
-</div>
-
-<script>
-  const tabelaPreco = {};
-  let itens = [];
-  const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
-  const sheetName = "Página1";
-  const url = https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName};
-
-  window.onload = () => {
-    carregarPrecos();
-    document.getElementById("data").value = new Date().toISOString().slice(0,10);
-    document.getElementById("numero").value = "ORC-" + Date.now().toString().slice(-6);
-  };
-
-  function carregarPrecos() {
-    fetch(url).then(r => r.text()).then(text => {
-      const start = text.indexOf('{');
-      const end = text.lastIndexOf('}') + 1;
-      const json = JSON.parse(text.slice(start, end));
-      const rows = json.table.rows;
-      const sel = document.getElementById("produto");
-      sel.innerHTML = "<option value=''>Selecione...</option>";
-      rows.forEach(r => {
-        const nome = r.c[0]?.v;
-        const preco = parseFloat(r.c[1]?.v);
-        const tipo = (r.c[2]?.v || '').toLowerCase();
-        if (nome && preco && tipo) {
-          tabelaPreco[nome.toLowerCase()] = { preco, tipo };
-          const o = document.createElement("option");
-          o.value = nome.toLowerCase();
-          o.textContent = nome;
-          sel.appendChild(o);
-        }
-      });
-    }).catch(err => {
-      console.error(err);
-      alert("Erro ao carregar produtos.");
-    });
-  }
-
-  function adicionarItem() {
-    const prod = document.getElementById("produto").value;
-    const largura = parseFloat(document.getElementById("largura").value);
-    const altura = parseFloat(document.getElementById("altura").value);
-    const comp = parseFloat(document.getElementById("comprimento").value);
-    const qtd = parseInt(document.getElementById("quantidade").value);
-    if (!prod || isNaN(qtd)) return alert("Campos obrigatórios faltando.");
-
-    const { preco, tipo } = tabelaPreco[prod];
-    let total=0, desc="";
-    if (tipo==="m2") {
-      if (isNaN(largura)||isNaN(altura)) return alert("Informe largura e altura para m².");
-      const area=largura*altura;
-      total = preco*area*qtd;
-      desc=${largura}×${altura}m · qty ${qtd};
-    } else if (tipo==="metro") {
-      if (isNaN(comp)) return alert("Informe comprimento.");
-      total = preco*comp*qtd;
-      desc=${comp}m · qty ${qtd};
-    } else if (tipo==="unidade") {
-      total = preco*qtd;
-      desc=qty ${qtd};
+    function carregarPrecos() {
+      fetch(url)
+        .then(res => res.text())
+        .then(data => {
+          const start = data.indexOf('{');
+          const end = data.lastIndexOf('}') + 1;
+          const json = JSON.parse(data.slice(start, end));
+          const rows = json.table.rows;
+          const select = document.getElementById("produto");
+          select.innerHTML = "<option value=''>Selecione</option>";
+          rows.forEach(row => {
+            const nome = row.c[0]?.v;
+            const preco = parseFloat(row.c[1]?.v);
+            const tipo = row.c[2]?.v?.toLowerCase();
+            if (nome && preco && tipo) {
+              const key = nome.toLowerCase();
+              tabelaPreco[key] = { preco, tipo };
+              const opt = document.createElement("option");
+              opt.value = key;
+              opt.textContent = nome;
+              select.appendChild(opt);
+            }
+          });
+        })
+        .catch(err => {
+          console.error("Erro:", err);
+          alert("Erro ao carregar os dados da planilha.");
+        });
     }
-    itens.push({ nome:prod, preco, total, desc });
-    atualizarOrcamento();
-  }
 
-  function atualizarOrcamento() {
-    const div = document.getElementById("itensOrcamento");
-    let html="<h3>Itens do Orçamento</h3><ul>";
-    let soma=0;
-    itens.forEach((it,i)=>{
-      html += <li><strong>${it.nome}</strong> ${it.desc} = R$${it.total.toFixed(2)} <button onclick="remover(${i})">❌</button></li>;
-      soma+=it.total;
-    });
-    html += </ul><p class="total">Total: R$ ${soma.toFixed(2)}</p>;
-    html += <div class="assinaturas"><div><hr><p>Assinatura do Cliente</p></div><div><hr><p>Assinatura do Vendedor</p></div></div>;
-    div.innerHTML = html;
-  }
+    function adicionarItem() {
+      const produto = document.getElementById("produto").value;
+      const largura = parseFloat(document.getElementById("largura").value);
+      const altura = parseFloat(document.getElementById("altura").value);
+      const comprimento = parseFloat(document.getElementById("comprimento").value);
+      const quantidade = parseInt(document.getElementById("quantidade").value);
 
-  function remover(i) { itens.splice(i,1); atualizarOrcamento(); }
+      if (!produto || isNaN(quantidade)) {
+        alert("Preencha todos os campos obrigatórios.");
+        return;
+      }
 
-  function gerarPDF() {
-    const cli = document.getElementById("cliente").value;
-    const num = document.getElementById("numero").value;
-    const dat = document.getElementById("data").value;
-    if (!cli || itens.length===0) return alert("Digite o cliente e adicione itens.");
+      const { preco, tipo } = tabelaPreco[produto];
+      let total = 0;
+      let medida = "";
 
-    const doc = new jsPDF();
-    let y=10;
-    doc.setFontSize(12);
-    doc.text("METLAL METALÚRGICA LADEIRA LTDA",10,y); y+=6;
-    doc.text("CNPJ: 00.000.000/0001-00",10,y); y+=6;
-    doc.text("Rua Jurucê, 78 – Colégio – RJ",10,y); y+=6;
-    doc.text("CEP: 21545‑170",10,y); y+=10;
+      if (tipo === "m2") {
+        if (isNaN(largura) || isNaN(altura)) return alert("Informe largura e altura.");
+        total = preco * (largura * altura * quantidade);
+        medida = (${largura}m x ${altura}m);
+      } else if (tipo === "metro") {
+        if (isNaN(comprimento)) return alert("Informe o comprimento.");
+        total = preco * comprimento * quantidade;
+        medida = (${comprimento}m linear);
+      } else if (tipo === "unidade") {
+        total = preco * quantidade;
+      }
 
-    doc.setFontSize(14);
-    doc.text("ORÇAMENTO",105,y,null,null,"center"); y+=10;
+      itens.push({ nome: produto, quantidade, total, preco, medida, tipo });
+      atualizarOrcamento();
+    }
 
-    doc.setFontSize(12);
-    doc.text(Cliente: ${cli},10,y); y+=6;
-    doc.text(Número: ${num},10,y); y+=6;
-    doc.text(Data: ${dat},10,y); y+=10;
+    function atualizarOrcamento() {
+      const div = document.getElementById("itensOrcamento");
+      let html = "<h3>Itens do Orçamento</h3><ul>";
+      let totalGeral = 0;
+      itens.forEach((item, i) => {
+        html += `<li><strong>${item.nome}</strong> ${item.medida || ""} - ${item.quantidade} x R$ ${item.preco.toFixed(2)} = R$ ${item.total.toFixed(2)} 
+          <button onclick="removerItem(${i})">❌ Remover</button></li>`;
+        totalGeral += item.total;
+      });
+      html += "</ul><p class='total'>Total: R$ " + totalGeral.toFixed(2) + "</p>";
+      html += `
+        <div class="assinaturas">
+          <div><hr><p>Assinatura do Cliente</p></div>
+          <div><hr><p>Assinatura do Vendedor</p></div>
+        </div>`;
+      div.innerHTML = html;
+    }
 
-    itens.forEach(it=>{
-      doc.text(- ${it.nome} | ${it.desc} | R$${it.total.toFixed(2)},10,y);
-      y+=7;
-    });
-    const tot= itens.reduce((s,a)=>s+a.total,0);
-    y+=5; doc.setFontSize(13);
-    doc.text(TOTAL GERAL: R$ ${tot.toFixed(2)},10,y); y+=20;
-    doc.line(20,y,90,y); doc.text("Assinatura do Cliente",30,y+5);
-    doc.line(120,y,190,y); doc.text("Assinatura do Vendedor",130,y+5);
-    doc.save(orc_${num}.pdf);
-  }
-</script>
+    function removerItem(index) {
+      itens.splice(index, 1);
+      atualizarOrcamento();
+    }
 
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const cliente = document.getElementById("cliente").value;
+      const numero = document.getElementById("numero").value;
+      const data = document.getElementById("data").value;
+
+      if (!cliente || itens.length === 0) {
+        alert("Informe o nome do cliente e adicione ao menos um produto.");
+        return;
+      }
+
+      let y = 10;
+      doc.setFontSize(12);
+      doc.text("METLAL METALÚRGICA LADEIRA LTDA", 10, y); y+=6;
+      doc.text("CNPJ: 00.000.000/0001-00", 10, y); y+=6;
+      doc.text("Rua Jurucê, 78 – Colégio – Rio de Janeiro – RJ", 10, y); y+=6;
+      doc.text("CEP: 21545-170", 10, y); y+=10;
+
+      doc.setFontSize(14);
+      doc.text("ORÇAMENTO", 105, y, null, null, "center"); y+=10;
+
+      doc.setFontSize(12);
+      doc.text(Cliente: ${cliente}, 10, y); y+=6;
+      doc.text(Número: ${numero}, 10, y); y+=6;
+      doc.text(Data: ${data}, 10, y); y+=10;
+
+      itens.forEach(item => {
+        doc.text(- ${item.nome} ${item.medida || ""} | Qtde: ${item.quantidade} | Total: R$ ${item.total.toFixed(2)}, 10, y);
+        y += 7;
+      });
+
+      const total = itens.reduce((acc, cur) => acc + cur.total, 0);
+      doc.setFontSize(13);
+      y += 5;
+      doc.text(TOTAL GERAL: R$ ${total.toFixed(2)}, 10, y); y+=20;
+
+      doc.line(20, y, 90, y); y+=5;
+      doc.text("Assinatura do Cliente", 30, y); y+=15;
+      doc.line(120, y-15, 190, y-15);
+      doc.text("Assinatura do Vendedor", 135, y);
+
+      doc.save(orcamento_${numero}.pdf);
+    }
+  </script>
 </body>
 </html>
