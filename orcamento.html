@@ -68,7 +68,7 @@
   const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
   const sheetName = "Página1";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
-  const webAppURL = "https://script.google.com/macros/s/AKfycbwyhOVraf3G4UMCQEfsAEBWasHZa_emnyjH9jE8nS0SmYuCnZPYTrG6_tW5MleJEbog/exec?tipo=produtos";
+  const webAppURL = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0jlx68GDBsmjNBkiYPzjgYi7mv-SUE57Gk6kWzarPl8MskACntRsq9e/exec";
 
   let tabelaPreco = {}, listaItens = [], contador = 1;
 
@@ -158,27 +158,17 @@
     doc.text(`Total: R$${tot.toFixed(2)}`,10,y+10);
     doc.save(`${numero.value}.pdf`);
 
-    const totalGeral = listaItens.reduce((sum, item) => sum + item.subtotal, 0);
-const produtosTexto = listaItens.map(item => {
-  return ${item.produto} (${item.quantidade}) - ${item.descricao};
-}).join(" | ");
-
-const payload = {
-  tipo: "salvar",
+    fetch(webAppURL, {
+      method:"POST",
+      body: JSON.stringify({
+        tipo: "salvar",
   numero,
   cliente,
   data,
   usuario: document.getElementById("usuarioLogin").value,
   produtos: produtosTexto,
   total: totalGeral.toFixed(2)
-};
 
-fetch(webAppURL, {
-  method: "POST",
-  body: JSON.stringify(payload)
-})
-.then(() => alert("Orçamento salvo com sucesso!"))
-.catch(() => alert("Erro ao salvar orçamento."));
       })
     }).then(() => alert("Orçamento salvo com sucesso"))
       .catch(() => alert("Erro ao salvar orçamento"));
