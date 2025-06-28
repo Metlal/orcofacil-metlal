@@ -64,13 +64,28 @@
 </div>
 
 <script>
+  // Variáveis globais dos elementos DOM
+  const usuario = document.getElementById("usuario");
+  const senha = document.getElementById("senha");
+  const loginScreen = document.getElementById("loginScreen");
+  const mainContent = document.getElementById("mainContent");
+  const produto = document.getElementById("produto");
+  const numero = document.getElementById("numero");
+  const data = document.getElementById("data");
+  const cliente = document.getElementById("cliente");
+  const largura = document.getElementById("largura");
+  const altura = document.getElementById("altura");
+  const comprimento = document.getElementById("comprimento");
+  const quantidade = document.getElementById("quantidade");
+  const itensOrcamento = document.getElementById("itensOrcamento");
+
   const loginUser = "admin", loginPass = "1234";
   const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
   const sheetName = "Página1";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
   const webAppURL = "https://script.google.com/macros/s/AKfycbwyhOVraf3G4UMCQEfsAEBWasHZa_emnyjH9jE8nS0SmYuCnZPYTrG6_tW5MleJEbog/exec?tipo=produtos";
 
-  let tabelaPreco = {}, listaItens = [], contador = 1;
+  let tabelaPreco = {}, listaItens = [], contador = 0;
 
   function fazerLogin() {
     if (usuario.value === loginUser && senha.value === loginPass) {
@@ -114,28 +129,44 @@
   }
 
   function adicionarItem() {
-    const nome = produto.value, qtd = parseInt(quantidade.value);
+    const nome = produto.value;
+    const qtd = parseInt(quantidade.value);
     const dados = tabelaPreco[nome];
-    if (!nome || !dados || qtd <=0) return alert("Selecione produto e quantidade.");
-    let sub = 0, desc="";
-    if (dados.tipo==="m2") {
-      const l = parseFloat(largura.value), a = parseFloat(altura.value);
-      if(isNaN(l)||isNaN(a)) return alert("Informe largura e altura");
-      const area = l*a; sub = dados.preco*area*qtd; desc = `Área ${area.toFixed(2)}m²`;
-    } else if (dados.tipo==="m") {
+    if (!nome || !dados || qtd <= 0) return alert("Selecione produto e quantidade válidos.");
+    
+    let sub = 0, desc = "";
+    
+    if (dados.tipo === "m2") {
+      const l = parseFloat(largura.value);
+      const a = parseFloat(altura.value);
+      if (isNaN(l) || isNaN(a)) return alert("Informe largura e altura corretamente.");
+      const area = l * a;
+      sub = dados.preco * area * qtd;
+      desc = `Área ${area.toFixed(2)} m²`;
+    } else if (dados.tipo === "m") {
       const c = parseFloat(comprimento.value);
-      if(isNaN(c)) return alert("Informe comprimento");
-      sub = dados.preco*c*qtd; desc = `Comp ${c.toFixed(2)}m`;
+      if (isNaN(c)) return alert("Informe comprimento corretamente.");
+      sub = dados.preco * c * qtd;
+      desc = `Comp ${c.toFixed(2)} m`;
     } else {
-      sub = dados.preco*qtd; desc = `Unidade`;
+      sub = dados.preco * qtd;
+      desc = "Unidade";
     }
+
     listaItens.push({nome, qtd, desc, sub});
     atualizarLista();
+
+    // Limpar campos depois de adicionar
+    produto.value = "";
+    largura.value = "";
+    altura.value = "";
+    comprimento.value = "";
+    quantidade.value = 1;
   }
 
   function atualizarLista() {
     let html = "<h3>Itens:</h3><ul>", tot = 0;
-    listaItens.forEach((it,i) => {
+    listaItens.forEach((it, i) => {
       html += `<li>${it.nome} x${it.qtd} (${it.desc}) – R$ ${it.sub.toFixed(2)} <button onclick="remover(${i})">❌</button></li>`;
       tot += it.sub;
     });
@@ -143,47 +174,52 @@
     itensOrcamento.innerHTML = html;
   }
 
-  function remover(i){ listaItens.splice(i,1); atualizarLista(); }
+  function remover(i) {
+    listaItens.splice(i, 1);
+    atualizarLista();
+  }
 
   function gerarPDF() {
-    if(!cliente.value||listaItens.length===0) return alert("Preencha todas informações.");
-    const { jsPDF } = window.jspdf, doc = new jsPDF();
-    doc.text(`Cliente: ${cliente.value}`,10,20);
-    doc.text(`Orçamento: ${numero.value} | Data: ${data.value}`,10,26);
-    let y=36, tot=0;
+    if (!cliente.value || listaItens.length === 0) {
+      return alert("Preencha todas as informações e adicione pelo menos um item.");
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.text(`Cliente: ${cliente.value}`, 10, 20);
+    doc.text(`Orçamento: ${numero.value} | Data: ${data.value}`, 10, 26);
+
+    let y = 36, tot = 0;
     listaItens.forEach(it => {
-      doc.text(`• ${it.nome} x${it.qtd} (${it.desc}) - R$${it.sub.toFixed(2)}`,10,y);
-      tot+=it.sub; y+=6;
+      doc.text(`• ${it.nome} x${it.qtd} (${it.desc}) - R$${it.sub.toFixed(2)}`, 10, y);
+      tot += it.sub;
+      y += 6;
     });
-    doc.text(`Total: R$${tot.toFixed(2)}`,10,y+10);
+
+    doc.text(`Total: R$${tot.toFixed(2)}`, 10, y + 10);
     doc.save(`${numero.value}.pdf`);
 
-    const totalGeral = listaItens.reduce((sum, item) => sum + item.subtotal, 0);
-const produtosTexto = listaItens.map(item => {
-  return ${item.produto} (${item.quantidade}) - ${item.descricao};
-}).join(" | ");
+    const produtosTexto = listaItens.map(item => {
+      return `${item.nome} (${item.qtd}) - ${item.desc}`;
+    }).join(" | ");
 
-const produtosTexto = listaItens.map(item => {
-  return `${item.produto} (${item.quantidade}) - ${item.descricao}`;
-}).join(" | ");
-
-fetch(webAppURL, {
-  method: "POST",
-  body: JSON.stringify({
-    tipo: "salvar",
-    numero: numero.value,
-    cliente: cliente.value,
-    data: data.value,
-    total: tot.toFixed(2),
-    produtos: produtosTexto,
-    usuario: document.getElementById("usuarioLogin").value,
-    status: "Pendente"  // Isso será tratado na planilha, se quiser
-  })
-.then(() => alert("Orçamento salvo com sucesso!"))
-.catch(() => alert("Erro ao salvar orçamento."));
+    fetch(webAppURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: "salvar",
+        numero: numero.value,
+        cliente: cliente.value,
+        data: data.value,
+        total: tot.toFixed(2),
+        produtos: produtosTexto,
+        usuario: loginUser,
+        status: "Pendente"
       })
-    }).then(() => alert("Orçamento salvo com sucesso"))
-      .catch(() => alert("Erro ao salvar orçamento"));
+    })
+    .then(() => alert("Orçamento salvo com sucesso!"))
+    .catch(() => alert("Erro ao salvar orçamento."));
   }
 </script>
 </body>
