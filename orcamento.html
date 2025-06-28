@@ -158,29 +158,15 @@
     doc.text(`Total: R$${tot.toFixed(2)}`,10,y+10);
     doc.save(`${numero.value}.pdf`);
 
-    const totalGeral = listaItens.reduce((sum, item) => sum + item.subtotal, 0);
-const produtosTexto = listaItens.map(item => {
-  return ${item.produto} (${item.quantidade}) - ${item.descricao};
-}).join(" | ");
-
-const produtosTexto = listaItens.map(item => {
-  return `${item.produto} (${item.quantidade}) - ${item.descricao}`;
-}).join(" | ");
-
-fetch(webAppURL, {
-  method: "POST",
-  body: JSON.stringify({
-    tipo: "salvar",
-    numero: numero.value,
-    cliente: cliente.value,
-    data: data.value,
-    total: tot.toFixed(2),
-    produtos: produtosTexto,
-    usuario: document.getElementById("usuarioLogin").value,
-    status: "Pendente"  // Isso será tratado na planilha, se quiser
-  })
-.then(() => alert("Orçamento salvo com sucesso!"))
-.catch(() => alert("Erro ao salvar orçamento."));
+    fetch(webAppURL, {
+      method:"POST",
+      body: JSON.stringify({
+        tipo:"salvar",
+        numero:numero.value,
+        cliente: cliente.value,
+        data: data.value,
+        total: tot.toFixed(2),
+        itens: listaItens
       })
     }).then(() => alert("Orçamento salvo com sucesso"))
       .catch(() => alert("Erro ao salvar orçamento"));
