@@ -1,5 +1,5 @@
-
 const tabelaPreco = {};
+const tabelaTipo = {};
 const itens = [];
 
 const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
@@ -14,8 +14,10 @@ function carregarProdutos() {
       const produtos = json.table.rows.map(row => {
         const produto = row.c[0]?.v;
         const preco = parseFloat(row.c[1]?.v);
-        if (produto && preco) {
+        const tipo = row.c[2]?.v?.toLowerCase();
+        if (produto && preco && tipo) {
           tabelaPreco[produto.toLowerCase()] = preco;
+          tabelaTipo[produto.toLowerCase()] = tipo;
           return produto;
         }
         return null;
@@ -46,22 +48,42 @@ function adicionarItem() {
   const comprimento = parseFloat(document.getElementById("comprimento").value);
   const quantidade = parseInt(document.getElementById("quantidade").value);
 
-  if (!cliente || !produto || isNaN(largura) || isNaN(altura) || isNaN(quantidade)) {
+  if (!cliente || !produto || isNaN(quantidade)) {
     alert("Preencha todos os campos corretamente.");
     return;
   }
 
-  const area = largura * altura * quantidade;
+  const tipo = tabelaTipo[produto];
   const precoUnitario = tabelaPreco[produto] || 0;
-  const valor = area * precoUnitario;
+  let unidade = "";
+  let baseCalculo = 0;
+
+  if (tipo === "m²") {
+    if (isNaN(largura) || isNaN(altura)) return alert("Informe largura e altura.");
+    baseCalculo = largura * altura * quantidade;
+    unidade = "m²";
+  } else if (tipo === "metro") {
+    if (isNaN(comprimento)) return alert("Informe o comprimento.");
+    baseCalculo = comprimento * quantidade;
+    unidade = "m";
+  } else if (tipo === "unidade") {
+    baseCalculo = quantidade;
+    unidade = "un";
+  } else {
+    return alert("Tipo de produto desconhecido.");
+  }
+
+  const valor = baseCalculo * precoUnitario;
 
   const item = {
     produto,
-    largura,
-    altura,
-    comprimento,
+    tipo,
+    largura: largura || 0,
+    altura: altura || 0,
+    comprimento: comprimento || 0,
     quantidade,
-    area: area.toFixed(2),
+    unidade,
+    base: baseCalculo.toFixed(2),
     valor: valor.toFixed(2),
   };
 
@@ -92,15 +114,16 @@ function renderizarItens() {
   }
 
   let html = "<table border='1' width='100%' cellpadding='5' cellspacing='0'>";
-  html += "<tr><th>Produto</th><th>Largura</th><th>Altura</th><th>Comprimento</th><th>Qtd</th><th>Área</th><th>Valor</th></tr>";
+  html += "<tr><th>Produto</th><th>Tipo</th><th>Largura</th><th>Altura</th><th>Comprimento</th><th>Qtd</th><th>Base</th><th>Valor</th></tr>";
   itens.forEach(item => {
     html += `<tr>
       <td>${item.produto}</td>
-      <td>${item.largura}</td>
-      <td>${item.altura}</td>
-      <td>${item.comprimento || '-'}</td>
+      <td>${item.tipo}</td>
+      <td>${item.largura || "-"}</td>
+      <td>${item.altura || "-"}</td>
+      <td>${item.comprimento || "-"}</td>
       <td>${item.quantidade}</td>
-      <td>${item.area} m²</td>
+      <td>${item.base} ${item.unidade}</td>
       <td>R$ ${item.valor}</td>
     </tr>`;
   });
@@ -126,8 +149,8 @@ function gerarPDF() {
   let y = 60;
   itens.forEach((item, index) => {
     doc.setFontSize(12);
-    doc.text(`Item ${index + 1}: ${item.produto}, ${item.largura}x${item.altura} (${item.quantidade} un)`, 10, y);
-    doc.text(`Área: ${item.area} m² | Valor: R$ ${item.valor}`, 10, y + 6);
+    doc.text(`Item ${index + 1}: ${item.produto} (${item.tipo})`, 10, y);
+    doc.text(`Base: ${item.base} ${item.unidade} | Valor: R$ ${item.valor}`, 10, y + 6);
     y += 14;
   });
 
