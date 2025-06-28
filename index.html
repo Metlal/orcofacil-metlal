@@ -166,25 +166,29 @@
       fetch(url)
         .then(res => res.text())
         .then(data => {
-          const json = JSON.parse(data.substr(47).slice(0, -2));
+          const start = data.indexOf('{');
+          const end = data.lastIndexOf('}') + 1;
+          const json = JSON.parse(data.slice(start, end));
           const rows = json.table.rows;
           const select = document.getElementById("produto");
-          select.innerHTML = "";
-
+          select.innerHTML = "<option value=''>Selecione</option>";
           rows.forEach(row => {
             const nome = row.c[0]?.v;
             const preco = parseFloat(row.c[1]?.v);
             const tipo = row.c[2]?.v?.toLowerCase();
             if (nome && preco && tipo) {
-              const chave = nome.toLowerCase();
-              tabelaPreco[chave] = { preco, tipo };
-
-              const option = document.createElement("option");
-              option.value = chave;
-              option.textContent = nome;
-              select.appendChild(option);
+              const key = nome.toLowerCase();
+              tabelaPreco[key] = { preco, tipo };
+              const opt = document.createElement("option");
+              opt.value = key;
+              opt.textContent = nome;
+              select.appendChild(opt);
             }
           });
+        })
+        .catch(err => {
+          console.error("Erro:", err);
+          alert("Erro ao carregar os dados da planilha.");
         });
     }
 
