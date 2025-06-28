@@ -57,6 +57,13 @@
     <label>Data:</label>
     <input type="date" id="data" required>
 
+<script>
+  let tabelaPreco = {}, listaItens = [];
+  const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
+  const sheetName = "Página1";
+  const sheetURL = "https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}";
+  const saveURL = "https://script.google.com/macros/s/AKfycbxRXoMtvwrKc0..."
+
     <label>Produto:</label>
     <select id="produto"><option value="">Carregando...</option></select>
 
