@@ -125,7 +125,13 @@ function renderizarItens() {
       <td>${item.quantidade}</td>
       <td>${item.base} ${item.unidade}</td>
       <td>R$ ${item.valor}</td>
-    </tr>`;
+    </tr>`const total = itens.reduce((acc, item) => acc + parseFloat(item.valor), 0);
+  html += `<tr>
+    <td colspan="7" style="text-align:right;"><strong>Total:</strong></td>
+    <td><strong>R$ ${total.toFixed(2)}</strong></td>
+  </tr>`;
+
+  container.innerHTML = html;
   });
   html += "</table>";
 
