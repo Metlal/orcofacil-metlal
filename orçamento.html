@@ -44,10 +44,10 @@
 </div>
 
 <script>
-  const webAppURL = "https://script.google.com/macros/s/AKfycbxPIVVkLuAbMiy7SJsoC7rqo_1uBN17iAu9I3e3lwy1Nkg8kUUUrz-LfUz4UhgHTqm_/exec";
+  const webAppURL = "https://script.google.com/macros/s/AKfycbwIt0xHDRTJyaDQCoUtK5_So7TX3t9elQsTNkWBM-ECaMURG5VAq3AvGVOHTgq6zhLb/exec";
   const sheetID = "1HhXN32p7V9NtzuuG-Xr03uBts_W2yNLBqosnZuWwGn8";
   const sheetName = "Produtos";
-  const sheetURL = "https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}";
+  const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
 
   const produto = document.getElementById("produto");
   const cliente = document.getElementById("cliente");
@@ -59,19 +59,9 @@
 
   let produtos = {};
   let lista = [];
-  let contador = 1;
 
   carregarProdutos();
   gerarNumero();
-
-  function gerarNumero() {
-    const hoje = new Date();
-    const ano = hoje.getFullYear().toString().slice(-2);
-    const mes = (hoje.getMonth() + 1).toString().padStart(2, "0");
-    const dia = hoje.getDate().toString().padStart(2, "0");
-    numero.value = `MT${ano}${mes}${dia}-${String(contador++).padStart(3, "0")}`;
-    data.value = hoje.toISOString().split("T")[0];
-  }
 
   function carregarProdutos() {
     fetch(sheetURL)
@@ -88,6 +78,21 @@
           }
         });
       });
+  }
+
+  function gerarNumero() {
+    fetch(webAppURL)
+      .then(res => res.text())
+      .then(ultimo => {
+        const num = ultimo.match(/\d+/);
+        let sequencia = num ? parseInt(num[0]) + 1 : 1;
+        numero.value = `MT${String(sequencia).padStart(4, "0")}`;
+      })
+      .catch(() => {
+        numero.value = "MT0001";
+      });
+
+    data.value = new Date().toISOString().split("T")[0];
   }
 
   function adicionarItem() {
@@ -156,7 +161,7 @@
       })
     })
     .then(r => r.text())
-    .then(res => alert("Orçamento salvo com sucesso!"))
+    .then(res => alert(res))
     .catch(err => alert("Erro ao salvar orçamento: " + err.message));
   }
 </script>
