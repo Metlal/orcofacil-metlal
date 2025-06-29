@@ -71,7 +71,7 @@
 </div>
 
 <script>
-  const webAppURL = "https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec";
+  const webAppURL = `https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec`;
   const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
   const sheetName = "Produtos";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
@@ -159,7 +159,7 @@
     const doc = new jsPDF();
 
     // Insira a logo manualmente com base64 ou URL no lugar do comentário abaixo:
-    // doc.addImage('logo_base64', 'PNG', 10, 10, 40, 15);
+    // doc.addImage('logo.png', 'PNG', 10, 10, 40, 15);
 
     doc.setFontSize(14);
     doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
