@@ -30,6 +30,7 @@
       background: #007bff;
       color: white;
       border: none;
+      cursor: pointer;
     }
     button:hover {
       background: #0056b3;
@@ -66,6 +67,7 @@
   <p class="total" id="total">Total: R$ 0,00</p>
 
   <button onclick="gerarPDF()">📥 Gerar PDF e Salvar</button>
+  <button onclick="novoOrcamento()">➕ Novo Orçamento</button>
 </div>
 
 <script>
@@ -156,8 +158,8 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // Logo (adicione depois com base64 ou img)
-    // doc.addImage('logo_base64_aqui', 'PNG', 10, 10, 40, 15);
+    // Insira a logo manualmente com base64 ou URL no lugar do comentário abaixo:
+    // doc.addImage('logo_base64', 'PNG', 10, 10, 40, 15);
 
     doc.setFontSize(14);
     doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
@@ -182,15 +184,8 @@
       head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
       body,
       theme: 'grid',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3
-      },
-      headStyles: {
-        fillColor: [0, 102, 204],
-        textColor: 255,
-        halign: 'center'
-      }
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [0, 102, 204], textColor: 255, halign: 'center' }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
@@ -219,6 +214,15 @@
     .then(r => r.text())
     .then(res => alert(res))
     .catch(err => alert("Erro ao salvar orçamento: " + err.message));
+  }
+
+  function novoOrcamento() {
+    cliente.value = "";
+    produto.selectedIndex = 0;
+    quantidade.value = 1;
+    lista = [];
+    atualizarLista();
+    gerarNumero();
   }
 </script>
 </body>
