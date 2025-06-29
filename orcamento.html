@@ -165,7 +165,8 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-// doc.addImage(logo, "PNG", 10, 10, 40, 15); // Comentado até logo base64 completa ser inserida
+// Insira a logo manualmente com base64 ou URL no lugar do comentário abaixo:
+    // doc.addImage('logo_base64', 'PNG', 10, 10, 40, 15);
 
     doc.addImage(logo, "PNG", 10, 10, 40, 15);
     doc.setFontSize(14);
