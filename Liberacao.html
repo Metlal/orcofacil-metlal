@@ -1,1 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📦 Liberação de Materiais</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #e6f2ff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #004080;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    label, h2 {
+      display: block;
+      margin: 10px 0;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #0056b3;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #003f88;
+    }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📦 Liberação de Materiais</h1>
+  </header>
+  <div class="container">
+    <h2>Consultar Orçamento</h2>
+    <label>Número do Orçamento:</label>
+    <input id="numero" type="text" placeholder="Ex: MT0005">
+    <button onclick="consultarOrcamento()">🔍 Buscar e Gerar Lista</button>
+    <div id="resultado"></div>
+  </div>
+  <script>
+    const resultado = document.getElementById("resultado");
+
+    const sheetOrcamentos = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Orcamentos";
+    const sheetEstrutura = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=EstruturaProduto";
+
+    async function consultarOrcamento() {
+      const numero = document.getElementById("numero").value.trim().toUpperCase();
+      if (!numero) return alert("Informe o número do orçamento.");
+
+      resultado.innerHTML = "<p>⏳ Buscando informações...</p>";
+
+      try {
+        const [orcTxt, estTxt] = await Promise.all([
+          fetch(sheetOrcamentos).then(r => r.text()),
+          fetch(sheetEstrutura).then(r => r.text())
+        ]);
+
+        const orcData = JSON.parse(orcTxt.substring(47).slice(0,-2)).table.rows;
+        const estrutura = JSON.parse(estTxt.substring(47).slice(0,-2)).table.rows;
+
+        const linha = orcData.find(row => row.c[0]?.v === numero);
+        if (!linha) return resultado.innerHTML = `<p>❌ Orçamento não encontrado.</p>`;
+
+        const produtosTexto = linha.c[4]?.v || "";
+        const produtos = produtosTexto.split("|").map(p => {
+          const [nome, qtd] = p.trim().split("(");
+          return { nome: nome.trim(), qtd: parseInt(qtd) || 1 };
+        });
+
+        let lista = {};
+        produtos.forEach(prod => {
+          estrutura.forEach(e => {
+            const p = e.c[0]?.v, insumo = e.c[1]?.v, q = parseFloat(e.c[2]?.v), un = e.c[3]?.v;
+            if (p === prod.nome && insumo && q) {
+              const chave = `${insumo} (${un})`;
+              lista[chave] = (lista[chave] || 0) + q * prod.qtd;
+            }
+          });
+        });
+
+        let html = `<h3>Materiais necessários para ${numero}</h3><ul>`;
+        for (let k in lista) {
+          html += `<li>${k}: <b>${lista[k].toFixed(2)}</b></li>`;
+        }
+        html += `</ul>`;
+
+        resultado.innerHTML = html;
+
+      } catch (err) {
+        resultado.innerHTML = `<p>Erro ao buscar dados. Verifique as planilhas.</p>`;
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
 
