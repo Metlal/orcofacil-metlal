@@ -38,6 +38,13 @@
       font-weight: bold;
       color: green;
     }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row select {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -53,16 +60,22 @@
   <label>Data:</label>
   <input id="data" type="date" />
 
-  <label>Filtrar por Grupo:</label>
-  <select id="grupoFiltro"><option value="">Todos</option></select>
-
-  <label>Produto:</label>
-  <select id="produto"><option>Carregando...</option></select>
+  <div class="row">
+    <div>
+      <label>Grupo:</label>
+      <select id="grupoFiltro"><option value="">Todos</option></select>
+    </div>
+    <div>
+      <label>Produto:</label>
+      <select id="produto"><option>Carregando...</option></select>
+    </div>
+  </div>
 
   <label>Quantidade:</label>
   <input id="quantidade" type="number" value="1" min="1" />
 
   <button onclick="adicionarItem()">Adicionar Produto</button>
+  <button onclick="gerarNumero()">🔁 Novo Orçamento</button>
 
   <div id="itens"></div>
 
@@ -141,6 +154,8 @@
       });
 
     data.value = new Date().toISOString().split("T")[0];
+    lista = [];
+    atualizarLista();
   }
 
   function adicionarItem() {
