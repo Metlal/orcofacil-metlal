@@ -65,7 +65,7 @@
   <script>
     const resultado = document.getElementById("resultado");
 
-    // URLs ajustadas com nome correto da aba
+    // Links atualizados conforme enviado
     const sheetOrcamentos = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Vendas";
     const sheetEstrutura = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=EstruturaProduto";
 
@@ -85,7 +85,10 @@
         const estrutura = JSON.parse(estTxt.substring(47).slice(0, -2)).table.rows;
 
         const linha = orcData.find(row => row.c[0]?.v === numero);
-        if (!linha) return resultado.innerHTML = `<p>❌ Orçamento não encontrado.</p>`;
+        if (!linha) {
+          resultado.innerHTML = `<p>❌ Orçamento <b>${numero}</b> não encontrado.</p>`;
+          return;
+        }
 
         const produtosTexto = linha.c[4]?.v || "";
         const produtos = produtosTexto.split("|").map(p => {
@@ -97,7 +100,11 @@
         let lista = {};
         produtos.forEach(prod => {
           estrutura.forEach(e => {
-            const p = e.c[0]?.v, insumo = e.c[1]?.v, q = parseFloat(e.c[2]?.v), un = e.c[3]?.v;
+            const p = e.c[0]?.v;
+            const insumo = e.c[1]?.v;
+            const q = parseFloat(e.c[2]?.v);
+            const un = e.c[3]?.v;
+
             if (p === prod.nome && insumo && q) {
               const chave = `${insumo} (${un})`;
               lista[chave] = (lista[chave] || 0) + q * prod.qtd;
@@ -105,7 +112,7 @@
           });
         });
 
-        let html = `<h3>Materiais necessários para ${numero}</h3><ul>`;
+        let html = `<h3>Materiais necessários para <b>${numero}</b></h3><ul>`;
         for (let k in lista) {
           html += `<li>${k}: <b>${lista[k].toFixed(2)}</b></li>`;
         }
@@ -114,7 +121,7 @@
         resultado.innerHTML = html;
 
       } catch (err) {
-        resultado.innerHTML = `<p>Erro ao buscar dados. Verifique as planilhas.</p>`;
+        resultado.innerHTML = `<p>❌ Erro ao buscar dados. Verifique as planilhas ou a conexão.</p>`;
         console.error(err);
       }
     }
