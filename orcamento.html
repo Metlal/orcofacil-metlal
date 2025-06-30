@@ -85,7 +85,7 @@
 </div>
 
 <script>
-  const webAppURL = "https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec"; // substitua se necessário
+  const webAppURL = "https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec";
   const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
   const sheetName = "Produtos";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
@@ -202,12 +202,15 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
+    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQC..."; // Substitua pelo base64 completo
+
+    doc.addImage(logoBase64, 'PNG', 10, 10, 50, 20);
     doc.setFontSize(14);
     doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
     doc.setFontSize(11);
-    doc.text(`Cliente: ${cliente.value}`, 10, 30);
-    doc.text(`Orçamento: ${numero.value}`, 10, 36);
-    doc.text(`Data: ${data.value}`, 10, 42);
+    doc.text(`Cliente: ${cliente.value}`, 10, 35);
+    doc.text(`Orçamento: ${numero.value}`, 10, 41);
+    doc.text(`Data: ${data.value}`, 10, 47);
 
     let total = 0;
     const body = lista.map(item => {
@@ -221,7 +224,7 @@
     });
 
     doc.autoTable({
-      startY: 50,
+      startY: 55,
       head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
       body,
       theme: 'grid',
