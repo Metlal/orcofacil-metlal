@@ -61,10 +61,12 @@
     <button onclick="consultarOrcamento()">🔍 Buscar e Gerar Lista</button>
     <div id="resultado"></div>
   </div>
+
   <script>
     const resultado = document.getElementById("resultado");
 
-    const sheetOrcamentos = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Orcamentos";
+    // URLs ajustadas com nome correto da aba
+    const sheetOrcamentos = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Vendas";
     const sheetEstrutura = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=EstruturaProduto";
 
     async function consultarOrcamento() {
@@ -79,16 +81,17 @@
           fetch(sheetEstrutura).then(r => r.text())
         ]);
 
-        const orcData = JSON.parse(orcTxt.substring(47).slice(0,-2)).table.rows;
-        const estrutura = JSON.parse(estTxt.substring(47).slice(0,-2)).table.rows;
+        const orcData = JSON.parse(orcTxt.substring(47).slice(0, -2)).table.rows;
+        const estrutura = JSON.parse(estTxt.substring(47).slice(0, -2)).table.rows;
 
         const linha = orcData.find(row => row.c[0]?.v === numero);
         if (!linha) return resultado.innerHTML = `<p>❌ Orçamento não encontrado.</p>`;
 
         const produtosTexto = linha.c[4]?.v || "";
         const produtos = produtosTexto.split("|").map(p => {
-          const [nome, qtd] = p.trim().split("(");
-          return { nome: nome.trim(), qtd: parseInt(qtd) || 1 };
+          const [nome, qtdTexto] = p.trim().split("(");
+          const qtd = parseInt(qtdTexto) || 1;
+          return { nome: nome.trim(), qtd };
         });
 
         let lista = {};
@@ -118,4 +121,3 @@
   </script>
 </body>
 </html>
-
