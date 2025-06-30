@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📦 Liberação de Materiais</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -60,25 +62,33 @@
   </header>
 
   <div class="container">
-    <h2>Consultar Orçamento</h2>
+    <h2>Consultar e Gerar Lista</h2>
     <label>Número do Orçamento:</label>
     <input id="numero" type="text" placeholder="Ex: MT0005" />
     <button onclick="consultarOrcamento()">🔍 Buscar e Gerar Lista</button>
     <div id="resultado"></div>
+    <div style="text-align:right; margin-top: 10px;">
+      <button onclick="gerarPDF()">📄 Gerar PDF</button>
+    </div>
   </div>
 
   <script>
     const resultado = document.getElementById("resultado");
 
-    const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
+    const sheetID = "1RYrHZ83QdRPdgJ8v8oUH3CrOktaPAWJMj85F19FonkY";
     const sheetOrcamentos = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Vendas`;
     const sheetEstrutura = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=EstruturaProduto`;
+
+    let listaFinal = {};
+    let numeroAtual = "";
 
     async function consultarOrcamento() {
       const numero = document.getElementById("numero").value.trim().toUpperCase();
       if (!numero) return alert("Informe o número do orçamento.");
 
       resultado.innerHTML = "<p>⏳ Buscando informações...</p>";
+      numeroAtual = numero;
+      listaFinal = {};
 
       try {
         const [orcamentoRes, estruturaRes] = await Promise.all([
@@ -98,11 +108,10 @@
         const produtosTexto = linha.c[4]?.v || "";
         const produtos = produtosTexto.split("|").map(p => {
           const [nome, qtdTxt] = p.trim().split("(");
-          const qtd = parseFloat(qtdTxt?.replace(")", "") || 1);
+          const qtd = parseFloat(qtdTxt?.replace(/[^\d.,]/g, "").replace(",", ".") || 1);
           return { nome: nome.trim(), qtd };
         });
 
-        let lista = {};
         produtos.forEach(prod => {
           estrutura.forEach(e => {
             const produtoEstrutura = e.c[0]?.v;
@@ -112,22 +121,50 @@
 
             if (produtoEstrutura === prod.nome && insumo && quantidade) {
               const chave = `${insumo} (${unidade})`;
-              lista[chave] = (lista[chave] || 0) + quantidade * prod.qtd;
+              listaFinal[chave] = (listaFinal[chave] || 0) + quantidade * prod.qtd;
             }
           });
         });
 
-        let html = `<h3>Materiais necessários para ${numero}</h3><ul>`;
-        for (let item in lista) {
-          html += `<li>${item}: <b>${lista[item].toFixed(2)}</b></li>`;
+        let html = `<h3>📋 Materiais para ${numero}</h3><ul>`;
+        for (let item in listaFinal) {
+          html += `<li>${item}: <b>${listaFinal[item].toFixed(2)}</b></li>`;
         }
         html += `</ul>`;
 
         resultado.innerHTML = html;
       } catch (err) {
-        resultado.innerHTML = `<p>⚠️ Erro ao buscar dados. Verifique se as abas e o compartilhamento da planilha estão corretos.</p>`;
+        resultado.innerHTML = `<p>⚠️ Erro ao buscar dados. Verifique as planilhas e permissões.</p>`;
         console.error(err);
       }
+    }
+
+    function gerarPDF() {
+      if (!numeroAtual || Object.keys(listaFinal).length === 0) {
+        return alert("Consulte um orçamento antes de gerar o PDF.");
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(14);
+      doc.text(`Lista de Materiais - ${numeroAtual}`, 105, 20, { align: "center" });
+
+      const body = Object.entries(listaFinal).map(([item, qtd]) => {
+        const [nome, unidade] = item.split(" (");
+        return [nome.trim(), unidade.replace(")", ""), qtd.toFixed(2)];
+      });
+
+      doc.autoTable({
+        startY: 30,
+        head: [["Insumo", "Unidade", "Quantidade"]],
+        body,
+        theme: 'grid',
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [0, 102, 204], textColor: 255, halign: 'center' }
+      });
+
+      doc.save(`Lista de Materiais - ${numeroAtual}.pdf`);
     }
   </script>
 </body>
