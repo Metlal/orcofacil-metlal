@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏠 OrçaFácil - Painel Inicial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: url('fundo_orcafacil.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+    .overlay {
+      background: rgba(255,255,255,0.9);
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    h1 {
+      font-size: 36px;
+      color: #004080;
+      margin-bottom: 30px;
+    }
+    .menu-button {
+      background: #004080;
+      color: white;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      padding: 15px 30px;
+      margin: 10px;
+      cursor: pointer;
+      width: 260px;
+    }
+    .menu-button:hover {
+      background-color: #0066cc;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1>🔧 OrçaFácil - Painel Inicial</h1>
+    <button class="menu-button" onclick="location.href='orcamentos.html'">📄 Gerar Orçamento</button>
+    <button class="menu-button" onclick="location.href='liberacao.html'">📦 Liberação de Materiais</button>
+    <button class="menu-button" onclick="location.href='ordem.html'">🏭 Ordem de Produção</button>
+  </div>
+</body>
+</html>
