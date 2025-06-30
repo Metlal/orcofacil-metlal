@@ -56,15 +56,6 @@
   <label>Produto:</label>
   <select id="produto"><option>Carregando...</option></select>
 
-  <label>Altura (m):</label>
-  <input id="altura" type="number" step="0.01" min="0" />
-
-  <label>Comprimento (m):</label>
-  <input id="comprimento" type="number" step="0.01" min="0" />
-
-  <label>Largura (m):</label>
-  <input id="largura" type="number" step="0.01" min="0" />
-
   <label>Quantidade:</label>
   <input id="quantidade" type="number" value="1" min="1" />
 
@@ -75,12 +66,11 @@
   <p class="total" id="total">Total: R$ 0,00</p>
 
   <button onclick="gerarPDF()">📥 Gerar PDF e Salvar</button>
-  <button onclick="novoOrcamento()">➕ Novo Orçamento</button>
 </div>
 
 <script>
-  const webAppURL = `https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec`;
-  const sheetID = `1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4`;
+  const webAppURL = "https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec";
+  const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
   const sheetName = "Produtos";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
 
@@ -89,9 +79,6 @@
   const numero = document.getElementById("numero");
   const data = document.getElementById("data");
   const quantidade = document.getElementById("quantidade");
-  const altura = document.getElementById("altura");
-  const comprimento = document.getElementById("comprimento");
-  const largura = document.getElementById("largura");
   const itensDiv = document.getElementById("itens");
   const totalDisplay = document.getElementById("total");
 
@@ -108,10 +95,13 @@
         const json = JSON.parse(text.substr(47).slice(0, -2));
         produto.innerHTML = "<option value=''>Selecione</option>";
         json.table.rows.forEach(row => {
-          const nome = row.c[0]?.v;
-          const preco = parseFloat(row.c[1]?.v || 0);
+          const nome = row.c[0]?.v || "";
+          const grupo = row.c[1]?.v || "";
+          const preco = parseFloat(row.c[2]?.v || 0);
+          const unidade = row.c[3]?.v || "";
+
           if (nome) {
-            produtos[nome] = preco;
+            produtos[nome] = { grupo, preco, unidade };
             produto.innerHTML += `<option value="${nome}">${nome}</option>`;
           }
         });
@@ -135,20 +125,19 @@
 
   function adicionarItem() {
     const nome = produto.value;
-    const qtd = parseInt(quantidade.value);
+    const qtd = parseFloat(quantidade.value);
     if (!nome || qtd <= 0) return alert("Selecione um produto válido.");
 
-    const preco = produtos[nome];
-    const subtotal = preco * qtd;
+    const dados = produtos[nome];
+    const subtotal = dados.preco * qtd;
 
     lista.push({
       nome,
       qtd,
-      preco,
-      subtotal,
-      altura: altura.value,
-      comprimento: comprimento.value,
-      largura: largura.value
+      grupo: dados.grupo,
+      preco: dados.preco,
+      unidade: dados.unidade,
+      subtotal
     });
 
     atualizarLista();
@@ -158,7 +147,8 @@
     let html = "<ul>", total = 0;
     lista.forEach((item, i) => {
       total += item.subtotal;
-      html += `<li>${item.nome} x${item.qtd} - R$ ${item.subtotal.toFixed(2)} <button onclick="remover(${i})">❌</button></li>`;
+      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
+                <button onclick="remover(${i})">❌</button></li>`;
     });
     html += "</ul>";
     itensDiv.innerHTML = html;
@@ -190,7 +180,8 @@
       total += item.subtotal;
       return [
         item.nome,
-        item.qtd,
+        item.grupo,
+        `${item.qtd} ${item.unidade}`,
         `R$ ${item.preco.toFixed(2)}`,
         `R$ ${item.subtotal.toFixed(2)}`
       ];
@@ -198,11 +189,18 @@
 
     doc.autoTable({
       startY: 50,
-      head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
+      head: [["Produto", "Grupo", "Quantidade", "Preço Unitário", "Subtotal"]],
       body,
       theme: 'grid',
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [0, 102, 204], textColor: 255, halign: 'center' }
+      styles: {
+        fontSize: 10,
+        cellPadding: 3
+      },
+      headStyles: {
+        fillColor: [0, 102, 204],
+        textColor: 255,
+        halign: 'center'
+      }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
@@ -212,7 +210,7 @@
 
     doc.save(`${numero.value}.pdf`);
 
-    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd})`).join(" | ");
+    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
 
     fetch(webAppURL, {
       method: "POST",
