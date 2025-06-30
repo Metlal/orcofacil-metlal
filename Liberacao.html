@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📦 Liberação de Materiais</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -46,18 +46,23 @@
     button:hover {
       background: #003f88;
     }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 6px; }
+    ul {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 6px;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>📦 Liberação de Materiais</h1>
   </header>
+
   <div class="container">
     <h2>Consultar Orçamento</h2>
     <label>Número do Orçamento:</label>
-    <input id="numero" type="text" placeholder="Ex: MT0005">
+    <input id="numero" type="text" placeholder="Ex: MT0005" />
     <button onclick="consultarOrcamento()">🔍 Buscar e Gerar Lista</button>
     <div id="resultado"></div>
   </div>
@@ -65,9 +70,9 @@
   <script>
     const resultado = document.getElementById("resultado");
 
-    // Links atualizados conforme enviado
-    const sheetOrcamentos = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Vendas";
-    const sheetEstrutura = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=EstruturaProduto";
+    const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
+    const sheetOrcamentos = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Vendas`;
+    const sheetEstrutura = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=EstruturaProduto`;
 
     async function consultarOrcamento() {
       const numero = document.getElementById("numero").value.trim().toUpperCase();
@@ -76,52 +81,51 @@
       resultado.innerHTML = "<p>⏳ Buscando informações...</p>";
 
       try {
-        const [orcTxt, estTxt] = await Promise.all([
+        const [orcamentoRes, estruturaRes] = await Promise.all([
           fetch(sheetOrcamentos).then(r => r.text()),
           fetch(sheetEstrutura).then(r => r.text())
         ]);
 
-        const orcData = JSON.parse(orcTxt.substring(47).slice(0, -2)).table.rows;
-        const estrutura = JSON.parse(estTxt.substring(47).slice(0, -2)).table.rows;
+        const orcData = JSON.parse(orcamentoRes.substring(47).slice(0, -2)).table.rows;
+        const estrutura = JSON.parse(estruturaRes.substring(47).slice(0, -2)).table.rows;
 
         const linha = orcData.find(row => row.c[0]?.v === numero);
         if (!linha) {
-          resultado.innerHTML = `<p>❌ Orçamento <b>${numero}</b> não encontrado.</p>`;
+          resultado.innerHTML = `<p>❌ Orçamento ${numero} não encontrado.</p>`;
           return;
         }
 
         const produtosTexto = linha.c[4]?.v || "";
         const produtos = produtosTexto.split("|").map(p => {
-          const [nome, qtdTexto] = p.trim().split("(");
-          const qtd = parseInt(qtdTexto) || 1;
+          const [nome, qtdTxt] = p.trim().split("(");
+          const qtd = parseFloat(qtdTxt?.replace(")", "") || 1);
           return { nome: nome.trim(), qtd };
         });
 
         let lista = {};
         produtos.forEach(prod => {
           estrutura.forEach(e => {
-            const p = e.c[0]?.v;
+            const produtoEstrutura = e.c[0]?.v;
             const insumo = e.c[1]?.v;
-            const q = parseFloat(e.c[2]?.v);
-            const un = e.c[3]?.v;
+            const quantidade = parseFloat(e.c[2]?.v || 0);
+            const unidade = e.c[3]?.v || "";
 
-            if (p === prod.nome && insumo && q) {
-              const chave = `${insumo} (${un})`;
-              lista[chave] = (lista[chave] || 0) + q * prod.qtd;
+            if (produtoEstrutura === prod.nome && insumo && quantidade) {
+              const chave = `${insumo} (${unidade})`;
+              lista[chave] = (lista[chave] || 0) + quantidade * prod.qtd;
             }
           });
         });
 
-        let html = `<h3>Materiais necessários para <b>${numero}</b></h3><ul>`;
-        for (let k in lista) {
-          html += `<li>${k}: <b>${lista[k].toFixed(2)}</b></li>`;
+        let html = `<h3>Materiais necessários para ${numero}</h3><ul>`;
+        for (let item in lista) {
+          html += `<li>${item}: <b>${lista[item].toFixed(2)}</b></li>`;
         }
         html += `</ul>`;
 
         resultado.innerHTML = html;
-
       } catch (err) {
-        resultado.innerHTML = `<p>❌ Erro ao buscar dados. Verifique as planilhas ou a conexão.</p>`;
+        resultado.innerHTML = `<p>⚠️ Erro ao buscar dados. Verifique se as abas e o compartilhamento da planilha estão corretos.</p>`;
         console.error(err);
       }
     }
