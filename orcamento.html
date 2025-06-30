@@ -42,7 +42,8 @@
       display: flex;
       gap: 10px;
     }
-    .row select {
+    .row > div,
+    .row > input {
       flex: 1;
     }
   </style>
@@ -71,6 +72,12 @@
     </div>
   </div>
 
+  <div class="row">
+    <input id="largura" type="number" placeholder="Largura (m)" step="0.01" min="0">
+    <input id="comprimento" type="number" placeholder="Comprimento (m)" step="0.01" min="0">
+    <input id="altura" type="number" placeholder="Altura (m)" step="0.01" min="0">
+  </div>
+
   <label>Quantidade:</label>
   <input id="quantidade" type="number" value="1" min="1" />
 
@@ -96,6 +103,9 @@
   const numero = document.getElementById("numero");
   const data = document.getElementById("data");
   const quantidade = document.getElementById("quantidade");
+  const largura = document.getElementById("largura");
+  const comprimento = document.getElementById("comprimento");
+  const altura = document.getElementById("altura");
   const itensDiv = document.getElementById("itens");
   const totalDisplay = document.getElementById("total");
 
@@ -160,10 +170,22 @@
 
   function adicionarItem() {
     const nome = produto.value;
-    const qtd = parseFloat(quantidade.value);
-    if (!nome || qtd <= 0) return alert("Selecione um produto válido.");
+    const qtdBase = parseFloat(quantidade.value);
+    if (!nome || qtdBase <= 0) return alert("Selecione um produto válido.");
 
     const dados = produtos[nome];
+    let qtd = qtdBase;
+
+    const l = parseFloat(largura.value) || 0;
+    const c = parseFloat(comprimento.value) || 0;
+    const a = parseFloat(altura.value) || 0;
+
+    if (l && c && a) {
+      qtd = qtdBase * (l * c * a);
+    } else if (l && c) {
+      qtd = qtdBase * (l * c);
+    }
+
     const subtotal = dados.preco * qtd;
 
     lista.push({
@@ -181,7 +203,7 @@
     let html = "<ul>", total = 0;
     lista.forEach((item, i) => {
       total += item.subtotal;
-      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
+      html += `<li>${item.nome} (${item.qtd.toFixed(2)} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
                 <button onclick="remover(${i})">❌</button></li>`;
     });
     html += "</ul>";
@@ -202,29 +224,26 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQC..."; // Substitua pelo base64 completo
-
-    doc.addImage(logoBase64, 'PNG', 10, 10, 50, 20);
     doc.setFontSize(14);
     doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
     doc.setFontSize(11);
-    doc.text(`Cliente: ${cliente.value}`, 10, 35);
-    doc.text(`Orçamento: ${numero.value}`, 10, 41);
-    doc.text(`Data: ${data.value}`, 10, 47);
+    doc.text(`Cliente: ${cliente.value}`, 10, 30);
+    doc.text(`Orçamento: ${numero.value}`, 10, 36);
+    doc.text(`Data: ${data.value}`, 10, 42);
 
     let total = 0;
     const body = lista.map(item => {
       total += item.subtotal;
       return [
         item.nome,
-        `${item.qtd} ${item.unidade}`,
+        `${item.qtd.toFixed(2)} ${item.unidade}`,
         `R$ ${item.preco.toFixed(2)}`,
         `R$ ${item.subtotal.toFixed(2)}`
       ];
     });
 
     doc.autoTable({
-      startY: 55,
+      startY: 50,
       head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
       body,
       theme: 'grid',
@@ -239,7 +258,7 @@
 
     doc.save(`${numero.value}.pdf`);
 
-    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
+    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd.toFixed(2)} ${item.unidade})`).join(" | ");
 
     fetch(webAppURL, {
       method: "POST",
