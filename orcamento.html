@@ -42,7 +42,7 @@
       display: flex;
       gap: 10px;
     }
-    .row select {
+    .row select, .row input {
       flex: 1;
     }
   </style>
@@ -71,6 +71,13 @@
     </div>
   </div>
 
+  <!-- Campos de Medidas -->
+  <div class="row" id="dimInputs" style="display: none;">
+    <input id="largura" type="number" placeholder="Largura (m)" step="0.01" min="0">
+    <input id="comprimento" type="number" placeholder="Comprimento (m)" step="0.01" min="0">
+    <input id="altura" type="number" placeholder="Altura (m)" step="0.01" min="0">
+  </div>
+
   <label>Quantidade:</label>
   <input id="quantidade" type="number" value="1" min="1" />
 
@@ -78,7 +85,6 @@
   <button onclick="gerarNumero()">🔁 Novo Orçamento</button>
 
   <div id="itens"></div>
-
   <p class="total" id="total">Total: R$ 0,00</p>
 
   <button onclick="gerarPDF()">📥 Gerar PDF e Salvar</button>
@@ -96,6 +102,10 @@
   const numero = document.getElementById("numero");
   const data = document.getElementById("data");
   const quantidade = document.getElementById("quantidade");
+  const largura = document.getElementById("largura");
+  const comprimento = document.getElementById("comprimento");
+  const altura = document.getElementById("altura");
+  const dimInputs = document.getElementById("dimInputs");
   const itensDiv = document.getElementById("itens");
   const totalDisplay = document.getElementById("total");
 
@@ -122,7 +132,7 @@
 
           if (nome) {
             produtos[nome] = { grupo, preco, unidade };
-            produto.innerHTML += `<option value="${nome}" data-grupo="${grupo}">${nome}</option>`;
+            produto.innerHTML += `<option value="${nome}">${nome}</option>`;
             grupos.add(grupo);
           }
         });
@@ -138,6 +148,24 @@
       if (!filtro || produtos[nome].grupo === filtro) {
         produto.innerHTML += `<option value="${nome}">${nome}</option>`;
       }
+    }
+  });
+
+  produto.addEventListener("change", () => {
+    const nome = produto.value;
+    if (!nome) {
+      dimInputs.style.display = "none";
+      return;
+    }
+
+    const unidade = produtos[nome]?.unidade?.toLowerCase();
+    if (unidade === "m²" || unidade === "m³" || unidade === "m3") {
+      dimInputs.style.display = "flex";
+    } else {
+      dimInputs.style.display = "none";
+      largura.value = "";
+      comprimento.value = "";
+      altura.value = "";
     }
   });
 
@@ -160,10 +188,21 @@
 
   function adicionarItem() {
     const nome = produto.value;
-    const qtd = parseFloat(quantidade.value);
-    if (!nome || qtd <= 0) return alert("Selecione um produto válido.");
+    const qtdBase = parseFloat(quantidade.value);
+    if (!nome || qtdBase <= 0) return alert("Selecione um produto válido.");
 
     const dados = produtos[nome];
+    let qtd = qtdBase;
+
+    const unidade = dados.unidade.toLowerCase();
+    if ((unidade === "m²" || unidade === "m³" || unidade === "m3") && largura.value && comprimento.value) {
+      const l = parseFloat(largura.value);
+      const c = parseFloat(comprimento.value);
+      const a = parseFloat(altura.value) || 1;
+      qtd = unidade === "m³" || unidade === "m3" ? l * c * a : l * c;
+      qtd = qtdBase * qtd; // vezes a quantidade base
+    }
+
     const subtotal = dados.preco * qtd;
 
     lista.push({
@@ -181,7 +220,7 @@
     let html = "<ul>", total = 0;
     lista.forEach((item, i) => {
       total += item.subtotal;
-      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
+      html += `<li>${item.nome} (${item.qtd.toFixed(2)} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
                 <button onclick="remover(${i})">❌</button></li>`;
     });
     html += "</ul>";
@@ -214,7 +253,7 @@
       total += item.subtotal;
       return [
         item.nome,
-        `${item.qtd} ${item.unidade}`,
+        `${item.qtd.toFixed(2)} ${item.unidade}`,
         `R$ ${item.preco.toFixed(2)}`,
         `R$ ${item.subtotal.toFixed(2)}`
       ];
@@ -236,7 +275,7 @@
 
     doc.save(`${numero.value}.pdf`);
 
-    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
+    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd.toFixed(2)} ${item.unidade})`).join(" | ");
 
     fetch(webAppURL, {
       method: "POST",
