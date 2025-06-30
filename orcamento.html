@@ -53,6 +53,9 @@
   <label>Data:</label>
   <input id="data" type="date" />
 
+  <label>Filtrar por Grupo:</label>
+  <select id="grupoFiltro"><option value="">Todos</option></select>
+
   <label>Produto:</label>
   <select id="produto"><option>Carregando...</option></select>
 
@@ -66,16 +69,16 @@
   <p class="total" id="total">Total: R$ 0,00</p>
 
   <button onclick="gerarPDF()">📥 Gerar PDF e Salvar</button>
-  <button onclick="novoOrcamento()">➕ Novo Orçamento</button>
 </div>
 
 <script>
-  const webAppURL = `https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec`;
+  const webAppURL = "https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec";
   const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
   const sheetName = "Produtos";
   const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=${sheetName}`;
 
   const produto = document.getElementById("produto");
+  const grupoFiltro = document.getElementById("grupoFiltro");
   const cliente = document.getElementById("cliente");
   const numero = document.getElementById("numero");
   const data = document.getElementById("data");
@@ -94,7 +97,10 @@
       .then(res => res.text())
       .then(text => {
         const json = JSON.parse(text.substr(47).slice(0, -2));
+        const grupos = new Set();
+        produtos = {};
         produto.innerHTML = "<option value=''>Selecione</option>";
+
         json.table.rows.forEach(row => {
           const nome = row.c[0]?.v || "";
           const grupo = row.c[1]?.v || "";
@@ -103,11 +109,24 @@
 
           if (nome) {
             produtos[nome] = { grupo, preco, unidade };
-            produto.innerHTML += `<option value="${nome}">${nome}</option>`;
+            produto.innerHTML += `<option value="${nome}" data-grupo="${grupo}">${nome}</option>`;
+            grupos.add(grupo);
           }
         });
+
+        grupoFiltro.innerHTML += [...grupos].map(g => `<option value="${g}">${g}</option>`).join("");
       });
   }
+
+  grupoFiltro.addEventListener("change", () => {
+    const filtro = grupoFiltro.value;
+    produto.innerHTML = "<option value=''>Selecione</option>";
+    for (const nome in produtos) {
+      if (!filtro || produtos[nome].grupo === filtro) {
+        produto.innerHTML += `<option value="${nome}">${nome}</option>`;
+      }
+    }
+  });
 
   function gerarNumero() {
     fetch(webAppURL + "?tipo=ultimo")
@@ -135,7 +154,6 @@
     lista.push({
       nome,
       qtd,
-      grupo: dados.grupo,
       preco: dados.preco,
       unidade: dados.unidade,
       subtotal
@@ -181,7 +199,6 @@
       total += item.subtotal;
       return [
         item.nome,
-        item.grupo,
         `${item.qtd} ${item.unidade}`,
         `R$ ${item.preco.toFixed(2)}`,
         `R$ ${item.subtotal.toFixed(2)}`
@@ -190,18 +207,11 @@
 
     doc.autoTable({
       startY: 50,
-      head: [["Produto", "Grupo", "Quantidade", "Preço Unitário", "Subtotal"]],
+      head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
       body,
       theme: 'grid',
-      styles: {
-        fontSize: 10,
-        cellPadding: 3
-      },
-      headStyles: {
-        fillColor: [0, 102, 204],
-        textColor: 255,
-        halign: 'center'
-      }
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [0, 102, 204], textColor: 255, halign: 'center' }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
