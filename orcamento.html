@@ -152,21 +152,19 @@
   });
 
   function gerarNumero() {
-    fetch(webAppURL + "?tipo=ultimo")
-      .then(res => res.text())
-      .then(ultimo => {
-        const num = ultimo.match(/\d+/);
-        let sequencia = num ? parseInt(num[0]) + 1 : 1;
-        numero.value = `MT${String(sequencia).padStart(4, "0")}`;
-      })
-      .catch(() => {
-        numero.value = "MT0001";
-      });
+  fetch("https://script.google.com/macros/s/AKfycbxQf_AyVZrus_Xs-ckOWeFJMdBEs-BFlPWyj1-Mn9fXG78MG7tCUoyeqLLYZD_5IeNA/exec")
+    .then(res => res.text())
+    .then(numero => {
+      document.getElementById("numero").value = numero;
+    })
+    .catch(() => {
+      document.getElementById("numero").value = "MT0001";
+    });
 
-    data.value = new Date().toISOString().split("T")[0];
-    lista = [];
-    atualizarLista();
-  }
+  document.getElementById("data").value = new Date().toISOString().split("T")[0];
+  lista = [];
+  atualizarLista();
+}
 
   function adicionarItem() {
     const nome = produto.value;
