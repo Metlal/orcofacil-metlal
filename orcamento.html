@@ -30,6 +30,7 @@
       background: #007bff;
       color: white;
       border: none;
+      cursor: pointer;
     }
     button:hover {
       background: #0056b3;
@@ -41,12 +42,19 @@
     .row {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
     }
-    .row select {
+    .row select, .row input, .row button {
       flex: 1;
     }
     .medidas {
       display: none;
+    }
+    #previewDesenho {
+      margin-top: 10px;
+      border: 1px dashed #999;
+      padding: 10px;
+      text-align: center;
     }
   </style>
 </head>
@@ -91,13 +99,16 @@
     <input id="altura" type="number" step="0.01" />
     <label>Comprimento (m):</label>
     <input id="comprimento" type="number" step="0.01" />
+    <div id="previewDesenho"></div>
   </div>
 
   <label>Quantidade:</label>
   <input id="quantidade" type="number" value="1" min="1" />
 
-  <button onclick="adicionarItem()">Adicionar Produto</button>
-  <button onclick="gerarNumero()">🔁 Novo Orçamento</button>
+  <div class="row">
+    <button onclick="adicionarItem()">Adicionar Produto</button>
+    <button onclick="gerarNumero()">🔁 Novo Orçamento</button>
+  </div>
 
   <div id="itens"></div>
 
@@ -124,12 +135,29 @@
   const largura = document.getElementById("largura");
   const altura = document.getElementById("altura");
   const comprimento = document.getElementById("comprimento");
+  const previewDesenho = document.getElementById("previewDesenho");
 
-  let produtos = {}; let lista = [];
+  let produtos = {}, lista = [];
 
   tipoProduto.addEventListener("change", () => {
     camposMedidas.style.display = tipoProduto.value === "medidas" ? "block" : "none";
+    if (tipoProduto.value === "medidas") previewDesenho.innerHTML = "";
   });
+
+  largura.addEventListener("input", desenharPreview);
+  altura.addEventListener("input", desenharPreview);
+  comprimento.addEventListener("input", desenharPreview);
+
+  function desenharPreview() {
+    const l = parseFloat(largura.value) || 1;
+    const a = parseFloat(altura.value) || 1;
+    const escala = 100; // pixels por metro (proporcional)
+    const svg = `<svg width="${l * escala}" height="${a * escala}" style="border:1px solid #333">
+      <rect x="0" y="0" width="${l * escala}" height="${a * escala}" fill="#cce5ff" stroke="#333" />
+      <text x="10" y="20" font-size="12">${l}m x ${a}m</text>
+    </svg>`;
+    previewDesenho.innerHTML = svg;
+  }
 
   function carregarProdutos() {
     fetch(sheetURL).then(res => res.text()).then(text => {
