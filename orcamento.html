@@ -42,8 +42,7 @@
       display: flex;
       gap: 10px;
     }
-    .row > div,
-    .row > input {
+    .row select {
       flex: 1;
     }
   </style>
@@ -72,12 +71,6 @@
     </div>
   </div>
 
-  <div class="row">
-    <input id="largura" type="number" placeholder="Largura (m)" step="0.01" min="0">
-    <input id="comprimento" type="number" placeholder="Comprimento (m)" step="0.01" min="0">
-    <input id="altura" type="number" placeholder="Altura (m)" step="0.01" min="0">
-  </div>
-
   <label>Quantidade:</label>
   <input id="quantidade" type="number" value="1" min="1" />
 
@@ -103,9 +96,6 @@
   const numero = document.getElementById("numero");
   const data = document.getElementById("data");
   const quantidade = document.getElementById("quantidade");
-  const largura = document.getElementById("largura");
-  const comprimento = document.getElementById("comprimento");
-  const altura = document.getElementById("altura");
   const itensDiv = document.getElementById("itens");
   const totalDisplay = document.getElementById("total");
 
@@ -152,38 +142,26 @@
   });
 
   function gerarNumero() {
-  fetch("https://script.google.com/macros/s/AKfycbxQf_AyVZrus_Xs-ckOWeFJMdBEs-BFlPWyj1-Mn9fXG78MG7tCUoyeqLLYZD_5IeNA/exec")
-    .then(res => res.text())
-    .then(numero => {
-      document.getElementById("numero").value = numero;
-    })
-    .catch(() => {
-      document.getElementById("numero").value = "MT0001";
-    });
+    fetch(webAppURL)
+      .then(res => res.text())
+      .then(num => {
+        numero.value = num;
+      })
+      .catch(() => {
+        numero.value = "MT0001";
+      });
 
-  document.getElementById("data").value = new Date().toISOString().split("T")[0];
-  lista = [];
-  atualizarLista();
-}
+    data.value = new Date().toISOString().split("T")[0];
+    lista = [];
+    atualizarLista();
+  }
 
   function adicionarItem() {
     const nome = produto.value;
-    const qtdBase = parseFloat(quantidade.value);
-    if (!nome || qtdBase <= 0) return alert("Selecione um produto válido.");
+    const qtd = parseFloat(quantidade.value);
+    if (!nome || qtd <= 0) return alert("Selecione um produto válido.");
 
     const dados = produtos[nome];
-    let qtd = qtdBase;
-
-    const l = parseFloat(largura.value) || 0;
-    const c = parseFloat(comprimento.value) || 0;
-    const a = parseFloat(altura.value) || 0;
-
-    if (l && c && a) {
-      qtd = qtdBase * (l * c * a);
-    } else if (l && c) {
-      qtd = qtdBase * (l * c);
-    }
-
     const subtotal = dados.preco * qtd;
 
     lista.push({
@@ -201,7 +179,7 @@
     let html = "<ul>", total = 0;
     lista.forEach((item, i) => {
       total += item.subtotal;
-      html += `<li>${item.nome} (${item.qtd.toFixed(2)} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
+      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} 
                 <button onclick="remover(${i})">❌</button></li>`;
     });
     html += "</ul>";
@@ -234,7 +212,7 @@
       total += item.subtotal;
       return [
         item.nome,
-        `${item.qtd.toFixed(2)} ${item.unidade}`,
+        `${item.qtd} ${item.unidade}`,
         `R$ ${item.preco.toFixed(2)}`,
         `R$ ${item.subtotal.toFixed(2)}`
       ];
@@ -256,7 +234,7 @@
 
     doc.save(`${numero.value}.pdf`);
 
-    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd.toFixed(2)} ${item.unidade})`).join(" | ");
+    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
 
     fetch(webAppURL, {
       method: "POST",
