@@ -55,6 +55,7 @@
       border: 1px dashed #999;
       padding: 10px;
       text-align: center;
+      background: #f9f9f9;
     }
   </style>
 </head>
@@ -111,16 +112,15 @@
   </div>
 
   <div id="itens"></div>
-
+  <p class="total" id="subtotal">Subtotal: R$ 0,00</p>
   <p class="total" id="total">Total: R$ 0,00</p>
 
-  <button onclick="gerarPDF()">📥 Gerar PDF e Salvar</button>
+  <button onclick="gerarPDF()">📅 Gerar PDF e Salvar</button>
 </div>
 
 <script>
   const webAppURL = "https://script.google.com/macros/s/AKfycbxQf_AyVZrus_Xs-ckOWeFJMdBEs-BFlPWyj1-Mn9fXG78MG7tCUoyeqLLYZD_5IeNA/exec";
-  const sheetID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
-  const sheetURL = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?sheet=Produtos`;
+  const sheetURL = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Produtos";
 
   const produto = document.getElementById("produto");
   const grupoFiltro = document.getElementById("grupoFiltro");
@@ -129,6 +129,7 @@
   const data = document.getElementById("data");
   const quantidade = document.getElementById("quantidade");
   const totalDisplay = document.getElementById("total");
+  const subtotalDisplay = document.getElementById("subtotal");
   const itensDiv = document.getElementById("itens");
   const tipoProduto = document.getElementById("tipoProduto");
   const camposMedidas = document.getElementById("camposMedidas");
@@ -141,22 +142,20 @@
 
   tipoProduto.addEventListener("change", () => {
     camposMedidas.style.display = tipoProduto.value === "medidas" ? "block" : "none";
-    if (tipoProduto.value === "medidas") previewDesenho.innerHTML = "";
+    if (tipoProduto.value !== "medidas") previewDesenho.innerHTML = "";
   });
 
   largura.addEventListener("input", desenharPreview);
   altura.addEventListener("input", desenharPreview);
-  comprimento.addEventListener("input", desenharPreview);
 
   function desenharPreview() {
     const l = parseFloat(largura.value) || 1;
     const a = parseFloat(altura.value) || 1;
-    const escala = 100; // pixels por metro (proporcional)
-    const svg = `<svg width="${l * escala}" height="${a * escala}" style="border:1px solid #333">
+    const escala = 100;
+    previewDesenho.innerHTML = `<svg width="${l * escala}" height="${a * escala}" style="border:1px solid #333">
       <rect x="0" y="0" width="${l * escala}" height="${a * escala}" fill="#cce5ff" stroke="#333" />
       <text x="10" y="20" font-size="12">${l}m x ${a}m</text>
     </svg>`;
-    previewDesenho.innerHTML = svg;
   }
 
   function carregarProdutos() {
@@ -225,6 +224,7 @@
     });
     html += "</ul>";
     itensDiv.innerHTML = html;
+    subtotalDisplay.textContent = `Subtotal: R$ ${total.toFixed(2)}`;
     totalDisplay.textContent = `Total: R$ ${total.toFixed(2)}`;
   }
 
