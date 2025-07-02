@@ -59,28 +59,50 @@
     }
 
     async function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF();
-      pdf.text("Lista de Materiais", 15, 15);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF();
 
-      const rows = [...document.querySelectorAll("table tr")].map(tr => 
-        [...tr.querySelectorAll("td,th")].map(td => td.innerText)
-      );
+  const orcamento = document.getElementById("orcamento").value.trim().toUpperCase();
+  const titulo = `Lista de Materiais - Orçamento ${orcamento}`;
+  const data = new Date().toLocaleDateString("pt-BR");
 
-      let y = 25;
-      rows.forEach((row, i) => {
-        row.forEach((cell, j) => {
-          pdf.text(cell, 15 + j * 30, y);
-        });
-        y += 8;
-        if (y > 270) {
-          pdf.addPage();
-          y = 15;
-        }
-      });
+  // Cabeçalho
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+  pdf.text(titulo, 15, 20);
 
-      pdf.save("lista-materiais.pdf");
+  pdf.setFontSize(10);
+  pdf.setFont("helvetica", "normal");
+  pdf.text(`Data de geração: ${data}`, 15, 28);
+  pdf.text("Sistema OrçaFácil", 150, 28);
+
+  // Tabela
+  const rows = [...document.querySelectorAll("table tr")].map(tr =>
+    [...tr.querySelectorAll("td,th")].map(td => td.innerText)
+  );
+
+  let y = 40;
+  rows.forEach((row, i) => {
+    row.forEach((cell, j) => {
+      const x = 15 + j * 28;
+      pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
+      pdf.setFontSize(8);
+      pdf.text(String(cell), x, y, { maxWidth: 28 });
+    });
+    y += 8;
+    if (y > 270) {
+      pdf.addPage();
+      y = 20;
     }
+  });
+
+  // Rodapé
+  pdf.setFontSize(8);
+  pdf.setFont("helvetica", "italic");
+  pdf.text("Documento gerado automaticamente pelo sistema OrçaFácil", 15, 290);
+
+  pdf.save(`ListaMateriais_${orcamento}.pdf`);
+}
   </script>
 </body>
 </html>
