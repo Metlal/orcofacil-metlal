@@ -2,84 +2,189 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Lista de Materiais</title>
+  <title>Consulta de Lista de Materiais</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-    input, button { padding: 10px; font-size: 16px; margin-right: 10px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #333; color: white; }
-    tr:nth-child(even) { background: #f2f2f2; }
-    #resultado { margin-top: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: url('inicial.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #333;
+      color: white;
+    }
+    .botao {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .botao:hover {
+      background-color: #388e3c;
+    }
+    .mensagem {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      width: 250px;
+    }
   </style>
 </head>
 <body>
-  <h2>🔍 Consulta de Lista de Materiais</h2>
-  <input type="text" id="orcamento" placeholder="Digite o número do orçamento">
-  <button onclick="buscarMateriais()">Gerar Lista de Materiais</button>
-  <div id="resultado"></div>
+  <div class="container">
+    <h2>🔍 Consulta de Lista de Materiais</h2>
+    <input type="text" id="numeroOrcamento" placeholder="Digite o número do orçamento" />
+    <button class="botao" onclick="gerarLista()">Gerar Lista de Materiais</button>
+
+    <div id="tituloLista"></div>
+
+    <table id="tabelaMateriais" style="display:none;">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Peça</th>
+          <th>Tipo</th>
+          <th>Comprimento (cm)</th>
+          <th>Qtd Total</th>
+          <th>Plano de Corte</th>
+          <th>Barras</th>
+          <th>Aproveitamento</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button class="botao" onclick="salvarNaPlanilha()">💾 Salvar na Planilha</button>
+    <button class="botao" onclick="gerarPDF()">🧾 Gerar PDF</button>
+
+    <div id="mensagem" class="mensagem"></div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    async function buscarMateriais() {
-      const orc = document.getElementById("orcamento").value.trim();
-      if (!orc) {
-        alert("Digite o número do orçamento.");
-        return;
-      }
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
+    let listaDeMateriais = [];
 
-      const url = `https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec?orcamento=${orc}`;
-      const resposta = await fetch(url);
-      const data = await resposta.json();
+    function gerarLista() {
+      const numero = document.getElementById("numeroOrcamento").value.trim();
+      if (!numero) return alert("Digite o número do orçamento!");
 
-      if (!data || data.length === 0) {
-        document.getElementById("resultado").innerHTML = `<p>Nenhum dado encontrado para o orçamento ${orc}.</p>`;
-        return;
-      }
+      fetch(`${SCRIPT_URL}?orcamento=${numero}`)
+        .then(res => res.json())
+        .then(data => {
+          listaDeMateriais = data;
+          preencherTabela(data, numero);
+        });
+    }
 
-      let html = `<h3>Lista de Materiais do Orçamento ${orc}</h3>
-      <table><tr>
-        <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento (cm)</th>
-        <th>Qtd Total</th><th>Plano de Corte</th><th>Barras</th><th>Aproveitamento</th>
-      </tr>`;
+    function preencherTabela(data, numero) {
+      const tabela = document.getElementById("tabelaMateriais");
+      const corpo = tabela.querySelector("tbody");
+      corpo.innerHTML = "";
+
+      document.getElementById("tituloLista").innerHTML = `<h3>Lista de Materiais do Orçamento ${numero}</h3>`;
+
       data.forEach(item => {
-        html += `<tr>
+        const row = corpo.insertRow();
+        row.innerHTML = `
           <td>${item.produto}</td>
           <td>${item.peca}</td>
           <td>${item.tipo}</td>
           <td>${item.comprimento}</td>
           <td>${item.qtdTotal}</td>
-          <td>${item.planoCorte || '-'}</td>
-          <td>${item.barrasNecessarias || '-'}</td>
-          <td>${item.aproveitamento || '-'}</td>
-        </tr>`;
+          <td>${item.planoCorte}</td>
+          <td>${item.barrasNecessarias}</td>
+          <td>${item.aproveitamento}</td>
+        `;
       });
-      html += `</table><br><button onclick="gerarPDF()">📄 Gerar PDF</button>`;
-      document.getElementById("resultado").innerHTML = html;
+
+      tabela.style.display = "table";
+      document.getElementById("mensagem").innerText = "";
     }
 
-    async function gerarPDF() {
+    function salvarNaPlanilha() {
+      if (listaDeMateriais.length === 0) {
+        alert("Gere uma lista antes de salvar!");
+        return;
+      }
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(listaDeMateriais),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(res => res.text())
+      .then(msg => {
+        document.getElementById("mensagem").innerText = msg;
+      })
+      .catch(() => {
+        document.getElementById("mensagem").innerText = "Erro ao salvar na planilha.";
+      });
+    }
+
+    function gerarPDF() {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
-      pdf.text("Lista de Materiais", 15, 15);
-
-      const rows = [...document.querySelectorAll("table tr")].map(tr => 
-        [...tr.querySelectorAll("td,th")].map(td => td.innerText)
+      const titulo = document.getElementById("tituloLista").innerText;
+      const rows = [...document.querySelectorAll("table tr")].map(tr =>
+        [...tr.querySelectorAll("th, td")].map(td => td.innerText)
       );
 
-      let y = 25;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.text(titulo, 14, 20);
+
+      // Cabeçalho
+      const startY = 30;
+      const rowHeight = 10;
+      const colWidths = [25, 25, 25, 30, 25, 30, 25, 40];
+
+      let y = startY;
       rows.forEach((row, i) => {
+        let x = 14;
+        pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
         row.forEach((cell, j) => {
-          pdf.text(cell, 15 + j * 30, y);
+          pdf.rect(x, y, colWidths[j], rowHeight);
+          pdf.text(String(cell), x + 2, y + 7, { maxWidth: colWidths[j] - 4 });
+          x += colWidths[j];
         });
-        y += 8;
+        y += rowHeight;
+
         if (y > 270) {
           pdf.addPage();
-          y = 15;
+          y = startY;
         }
       });
 
-      pdf.save("lista-materiais.pdf");
+      pdf.save("Lista_de_Materiais.pdf");
     }
   </script>
 </body>
