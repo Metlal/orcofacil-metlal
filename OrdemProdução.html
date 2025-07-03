@@ -161,26 +161,27 @@
   doc.text(title, 14, 20);
 
   const grouped = {}; // Agrupar por produto
-  let totalGeral = 0;
+  let totalPecas = 0;
 
   orderData.forEach(item => {
     const key = item.produto;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(item);
-    totalGeral += Number(item.quantidade);
+    totalPecas += Number(item.quantidade);
   });
+
+  const totalProdutos = Object.keys(grouped).length;
 
   let y = 30;
   for (let produto in grouped) {
     doc.setFontSize(12);
-    doc.text(`Produto: ${produto}`, 14, y);
+    doc.text(`🔧 Produto: ${produto}`, 14, y);
     y += 8;
 
     const headers = ["Peça", "Tipo", "Comprimento", "Quantidade"];
     const colWidths = [50, 40, 40, 30];
     const startX = 14;
 
-    // Cabeçalho da tabela
     headers.forEach((header, i) => {
       doc.setFillColor(200, 200, 200);
       doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), y, colWidths[i], 10, 'F');
@@ -189,7 +190,6 @@
     });
     y += 10;
 
-    let subtotal = 0;
     grouped[produto].forEach(item => {
       const linha = [item.peca, item.tipo, String(item.comprimento), String(item.quantidade)];
       linha.forEach((cell, i) => {
@@ -197,22 +197,22 @@
         doc.rect(x, y, colWidths[i], 10);
         doc.text(cell, x + 2, y + 7);
       });
-      subtotal += Number(item.quantidade);
       y += 10;
     });
 
-    doc.setFontSize(11);
-    doc.text(`Subtotal de peças: ${subtotal}`, 14, y + 5);
-    y += 15;
+    y += 5;
   }
 
+  y += 10;
   doc.setFontSize(12);
-  doc.setTextColor(20, 20, 20);
-  doc.text(`🔢 Total geral de peças: ${totalGeral}`, 14, y);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`📦 Total de Produtos: ${totalProdutos}`, 14, y);
+  y += 8;
+  doc.text(`🔩 Total de Peças: ${totalPecas}`, 14, y);
 
   y += 20;
   doc.text("____________________________", 20, y);
-  doc.text("____________________________", 120, y + 0);
+  doc.text("____________________________", 120, y);
   doc.text("Responsável pela Produção", 25, y + 8);
   doc.text("Conferido por", 140, y + 8);
 
