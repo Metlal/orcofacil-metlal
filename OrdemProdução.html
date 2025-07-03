@@ -152,36 +152,73 @@
       });
     }
 
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const title = document.getElementById('orderInfo').innerText;
+   function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-      doc.setFontSize(14);
-      doc.text(title, 14, 20);
+  const title = document.getElementById('orderInfo').innerText;
+  doc.setFontSize(14);
+  doc.text(title, 14, 20);
 
-      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade"]];
-      const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade]);
+  const grouped = {}; // Agrupar por produto
+  let totalGeral = 0;
 
-      let y = 30;
-      headers.concat(rows).forEach((r, i) => {
-        let x = 14;
-        r.forEach((cell, j) => {
-          doc.rect(x, y, 35, 10);
-          doc.text(String(cell), x + 2, y + 7);
-          x += 35;
-        });
-        y += 10;
+  orderData.forEach(item => {
+    const key = item.produto;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(item);
+    totalGeral += Number(item.quantidade);
+  });
+
+  let y = 30;
+  for (let produto in grouped) {
+    doc.setFontSize(12);
+    doc.text(`Produto: ${produto}`, 14, y);
+    y += 8;
+
+    const headers = ["Peça", "Tipo", "Comprimento", "Quantidade"];
+    const colWidths = [50, 40, 40, 30];
+    const startX = 14;
+
+    // Cabeçalho da tabela
+    headers.forEach((header, i) => {
+      doc.setFillColor(200, 200, 200);
+      doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), y, colWidths[i], 10, 'F');
+      doc.setTextColor(0);
+      doc.text(header, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0) + 2, y + 7);
+    });
+    y += 10;
+
+    let subtotal = 0;
+    grouped[produto].forEach(item => {
+      const linha = [item.peca, item.tipo, String(item.comprimento), String(item.quantidade)];
+      linha.forEach((cell, i) => {
+        const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.rect(x, y, colWidths[i], 10);
+        doc.text(cell, x + 2, y + 7);
       });
+      subtotal += Number(item.quantidade);
+      y += 10;
+    });
 
-      y += 20;
-      doc.text("____________________________", 20, y);
-      doc.text("____________________________", 120, y);
-      doc.text("Responsável pela Produção", 25, y + 8);
-      doc.text("Conferido por", 140, y + 8);
+    doc.setFontSize(11);
+    doc.text(`Subtotal de peças: ${subtotal}`, 14, y + 5);
+    y += 15;
+  }
 
-      doc.save("Ordem_de_Producao.pdf");
-    }
+  doc.setFontSize(12);
+  doc.setTextColor(20, 20, 20);
+  doc.text(`🔢 Total geral de peças: ${totalGeral}`, 14, y);
+
+  y += 20;
+  doc.text("____________________________", 20, y);
+  doc.text("____________________________", 120, y + 0);
+  doc.text("Responsável pela Produção", 25, y + 8);
+  doc.text("Conferido por", 140, y + 8);
+
+  doc.save("Ordem_de_Producao.pdf");
+}
+
   </script>
 </body>
 </html>
