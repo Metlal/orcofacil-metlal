@@ -160,17 +160,25 @@
   doc.setFontSize(14);
   doc.text(title, 14, 20);
 
-  const grouped = {}; // Agrupar por produto
+  const grouped = {};
   let totalPecas = 0;
+  let produtoContador = {};
 
   orderData.forEach(item => {
-    const key = item.produto;
+    const key = `${item.produto}`;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(item);
     totalPecas += Number(item.quantidade);
+
+    // Contagem de quantas vezes o produto apareceu (mesmo nome)
+    if (!produtoContador[key]) produtoContador[key] = 1;
+    else produtoContador[key]++;
   });
 
-  const totalProdutos = Object.keys(grouped).length;
+  let totalProdutos = 0;
+  for (let key in produtoContador) {
+    totalProdutos += produtoContador[key];
+  }
 
   let y = 30;
   for (let produto in grouped) {
