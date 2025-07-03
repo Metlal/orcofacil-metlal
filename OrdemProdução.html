@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ordem de Produção</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #f4f4f4;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 1000px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #333;
+      color: white;
+    }
+    .botao {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .botao:hover {
+      background-color: #1976D2;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      width: 250px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>✍️ Gerar Ordem de Produção</h2>
+    <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
+    <input type="text" id="responsavel" placeholder="Responsável" />
+    <button class="botao" onclick="gerarOrdem()">Gerar Ordem</button>
+
+    <div id="infoOrdem"></div>
+    <table id="tabelaOrdem" style="display:none;">
+      <thead>
+        <tr>
+          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button class="botao" onclick="salvarOrdem()">Salvar Ordem</button>
+    <button class="botao" onclick="gerarPDF()">Gerar PDF</button>
+
+    <div id="mensagem"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
+    let dadosOrdem = [];
+    let numeroOrdem = '';
+
+    function gerarOrdem() {
+      const orc = document.getElementById('orcamento').value.trim();
+      const resp = document.getElementById('responsavel').value.trim();
+      if (!orc || !resp) return alert('Preencha todos os campos');
+
+      fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
+        .then(r => r.json())
+        .then(dados => {
+          if (!dados.length) return alert('Nenhum dado encontrado.');
+
+          dadosOrdem = dados;
+          numeroOrdem = dados[0].numeroOrdem;
+          document.getElementById('infoOrdem').innerHTML = `
+            <h3>Ordem: ${numeroOrdem} | Cliente: ${dados[0].cliente} | Responsável: ${resp}</h3>
+          `;
+
+          const tbody = document.querySelector('#tabelaOrdem tbody');
+          tbody.innerHTML = '';
+          dados.forEach(l => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+              <td>${l.produto}</td><td>${l.peca}</td><td>${l.tipo}</td><td>${l.comprimento}</td><td>${l.quantidade}</td>
+            `;
+          });
+          document.getElementById('tabelaOrdem').style.display = 'table';
+        });
+    }
+
+    function salvarOrdem() {
+      if (!dadosOrdem.length) return alert('Gere uma ordem antes.');
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(dadosOrdem),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(r => r.text())
+      .then(msg => {
+        document.getElementById('mensagem').innerText = msg;
+      });
+    }
+
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const title = document.getElementById('infoOrdem').innerText;
+
+      doc.setFontSize(14);
+      doc.text(title, 14, 20);
+
+      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade"]];
+      const rows = dadosOrdem.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade]);
+
+      let y = 30;
+      headers.concat(rows).forEach((r, i) => {
+        let x = 14;
+        r.forEach((cell, j) => {
+          doc.rect(x, y, 35, 10);
+          doc.text(String(cell), x + 2, y + 7);
+          x += 35;
+        });
+        y += 10;
+      });
+
+      y += 20;
+      doc.text("____________________________", 20, y);
+      doc.text("____________________________", 120, y);
+      doc.text("Responsável pela Produção", 25, y + 8);
+      doc.text("Conferido por", 140, y + 8);
+
+      doc.save("Ordem_de_Producao.pdf");
+    }
+  </script>
+</body>
+</html>
