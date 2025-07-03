@@ -58,7 +58,6 @@
     <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
     <input type="text" id="responsavel" placeholder="Responsável" />
     <button class="botao" onclick="gerarOrdem()">Gerar Ordem</button>
-    <button class="botao" onclick="novaPesquisa()">🔄 Nova Pesquisa</button>
 
     <div id="infoOrdem"></div>
     <table id="tabelaOrdem" style="display:none;">
@@ -70,8 +69,9 @@
       <tbody></tbody>
     </table>
 
-    <button class="botao" onclick="salvarOrdem()">💾 Salvar Ordem</button>
-    <button class="botao" onclick="gerarPDF()">🧾 Gerar PDF</button>
+    <button class="botao" onclick="salvarOrdem()">Salvar Ordem</button>
+    <button class="botao" onclick="gerarPDF()">Gerar PDF</button>
+    <button class="botao" onclick="novaPesquisa()">🔄 Nova Pesquisa</button>
 
     <div id="mensagem"></div>
   </div>
@@ -153,17 +153,6 @@
       doc.text("Conferido por", 140, y + 8);
 
       doc.save("Ordem_de_Producao.pdf");
-    }
-
-    function novaPesquisa() {
-      document.getElementById('orcamento').value = '';
-      document.getElementById('responsavel').value = '';
-      document.getElementById('infoOrdem').innerHTML = '';
-      document.querySelector('#tabelaOrdem tbody').innerHTML = '';
-      document.getElementById('tabelaOrdem').style.display = 'none';
-      document.getElementById('mensagem').innerText = '';
-      dadosOrdem = [];
-      numeroOrdem = '';
     }
   </script>
 </body>
