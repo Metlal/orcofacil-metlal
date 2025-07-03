@@ -90,13 +90,22 @@
       const resp = document.getElementById('responsavel').value.trim();
       if (!orc || !resp) return alert('Preencha todos os campos');
 
-      fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
-        .then(response => response.json())
+      const url = `${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`;
+      console.log("Consultando URL:", url);  // ajuda para depuração
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error("Erro na resposta da API");
+          return response.json();
+        })
         .then(data => {
-          if (!data.length) return alert('Nenhum dado encontrado.');
+          if (!data.length) {
+            alert('Nenhum dado encontrado.');
+            return;
+          }
 
           orderData = data;
-          orderNumber = data[0].numeroOrdem;
+          orderNumber = data[0].numeroOrdem || 'Sem número';
 
           document.getElementById('orderInfo').innerHTML = `
             <h3>Ordem: ${orderNumber} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
@@ -116,6 +125,10 @@
           });
 
           document.getElementById('orderTable').style.display = 'table';
+        })
+        .catch(error => {
+          console.error('Erro ao buscar dados da ordem:', error);
+          alert('Erro ao buscar dados da ordem.');
         });
     }
 
