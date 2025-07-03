@@ -57,10 +57,10 @@
     <h2>✍️ Gerar Ordem de Produção</h2>
     <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
     <input type="text" id="responsavel" placeholder="Responsável" />
-    <button class="botao" onclick="gerarOrdem()">Gerar Ordem</button>
+    <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
 
-    <div id="infoOrdem"></div>
-    <table id="tabelaOrdem" style="display:none;">
+    <div id="orderInfo"></div>
+    <table id="orderTable" style="display:none;">
       <thead>
         <tr>
           <th>Produto</th>
@@ -73,70 +73,82 @@
       <tbody></tbody>
     </table>
 
-    <button class="botao" onclick="salvarOrdem()">💾 Salvar Ordem</button>
-    <button class="botao" onclick="gerarPDF()">🧾 Gerar PDF</button>
+    <button class="botao" onclick="saveOrder()">💾 Salvar Ordem</button>
+    <button class="botao" onclick="generatePDF()">🧾 Gerar PDF</button>
 
-    <div id="mensagem"></div>
+    <div id="message"></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
-    let dadosOrdem = [];
-    let numeroOrdem = '';
+    let orderData = [];
+    let orderNumber = '';
 
-    function gerarOrdem() {
+    function generateOrder() {
       const orc = document.getElementById('orcamento').value.trim();
       const resp = document.getElementById('responsavel').value.trim();
       if (!orc || !resp) return alert('Preencha todos os campos');
 
       fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
-        .then(r => r.json())
-        .then(dados => {
-          if (!dados.length) return alert('Nenhum dado encontrado.');
+        .then(response => response.json())
+        .then(data => {
+          if (!data.length) return alert('Nenhum dado encontrado.');
 
-          dadosOrdem = dados;
-          numeroOrdem = dados[0].numeroOrdem;
-          document.getElementById('infoOrdem').innerHTML = `
-            <h3>Ordem: ${numeroOrdem} | Cliente: ${dados[0].cliente} | Responsável: ${resp}</h3>
+          orderData = data;
+          orderNumber = data[0].numeroOrdem;
+
+          document.getElementById('orderInfo').innerHTML = `
+            <h3>Ordem: ${orderNumber} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
           `;
 
-          const tbody = document.querySelector('#tabelaOrdem tbody');
+          const tbody = document.querySelector('#orderTable tbody');
           tbody.innerHTML = '';
-          dados.forEach(l => {
+          data.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-              <td>${l.produto}</td><td>${l.peca}</td><td>${l.tipo}</td><td>${l.comprimento}</td><td>${l.quantidade}</td>
+              <td>${item.produto}</td>
+              <td>${item.peca}</td>
+              <td>${item.tipo}</td>
+              <td>${item.comprimento}</td>
+              <td>${item.quantidade}</td>
             `;
           });
-          document.getElementById('tabelaOrdem').style.display = 'table';
+
+          document.getElementById('orderTable').style.display = 'table';
         });
     }
 
-    function salvarOrdem() {
-      if (!dadosOrdem.length) return alert('Gere uma ordem antes.');
+    function saveOrder() {
+      if (!orderData.length) return alert('Gere uma ordem antes.');
 
       fetch(SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify(dadosOrdem),
-        headers: { 'Content-Type': 'application/json' }
+        body: JSON.stringify(orderData),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
-      .then(r => r.text())
-      .then(msg => {
-        document.getElementById('mensagem').innerText = msg;
+      .then(response => response.text())
+      .then(message => {
+        document.getElementById('message').innerText = message;
+      })
+      .catch(error => {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar a ordem.');
       });
     }
 
-    function gerarPDF() {
+    function generatePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      const title = document.getElementById('infoOrdem').innerText;
+      const title = document.getElementById('orderInfo').innerText;
 
       doc.setFontSize(14);
       doc.text(title, 14, 20);
 
       const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade"]];
-      const rows = dadosOrdem.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade]);
+      const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade]);
 
       let y = 30;
       headers.concat(rows).forEach((r, i) => {
