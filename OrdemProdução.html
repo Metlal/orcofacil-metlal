@@ -137,41 +137,53 @@
 
     function generatePDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const logo = new Image();
-      logo.src = 'logotipo.png';
+      const doc = new jsPDF({ orientation: 'landscape' });
+      let y = 20;
 
-      logo.onload = function () {
-        doc.addImage(logo, 'JPEG', 80, 10, 50, 20);
+      const info = orderData[0];
+      doc.setFontSize(12);
+      doc.text(`Ordem de Produção: ${info.numeroOrdem}`, 14, y);
+      doc.text(`Cliente: ${info.cliente}`, 14, y + 8);
+      doc.text(`Nº do Pedido: ${info.pedido}`, 14, y + 16);
+      doc.text(`Responsável: ${info.responsavel}`, 14, y + 24);
+      doc.text(`Total de Peças: ${orderData.reduce((sum, d) => sum + Number(d.quantidade), 0)}`, 14, y + 32);
 
-        let y = 35;
-        doc.setFontSize(12);
-        doc.text(document.getElementById('orderInfo').innerText, 14, y);
-        y += 10;
-        doc.text(document.getElementById('summary').innerText, 14, y);
-        y += 10;
+      const subtotais = {};
+      orderData.forEach(item => {
+        if (!subtotais[item.produto]) subtotais[item.produto] = item.qtdProduto || 0;
+      });
 
-        const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-        const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
+      let subY = y + 40;
+      doc.text('Subtotais por Produto:', 14, subY);
+      Object.entries(subtotais).forEach(([produto, qtd]) => {
+        subY += 8;
+        doc.text(`- ${produto}: ${qtd} unidade(s)`, 18, subY);
+      });
 
-        headers.concat(rows).forEach(row => {
-          let x = 14;
-          row.forEach(cell => {
-            doc.rect(x, y, 30, 10);
-            doc.text(String(cell), x + 2, y + 7);
-            x += 30;
-          });
-          y += 10;
+      y = subY + 12;
+
+      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
+      const rows = orderData.map(d => [
+        d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || ''
+      ]);
+
+      headers.concat(rows).forEach((r, i) => {
+        let x = 14;
+        r.forEach((cell, j) => {
+          doc.rect(x, y, 40, 10);
+          doc.text(String(cell), x + 1, y + 7);
+          x += 40;
         });
+        y += 10;
+      });
 
-        y += 20;
-        doc.text("__________________________", 30, y);
-        doc.text("__________________________", 130, y);
-        doc.text("Responsável pela Produção", 35, y + 8);
-        doc.text("Conferido por", 140, y + 8);
+      y += 20;
+      doc.text("__________________________", 30, y);
+      doc.text("__________________________", 180, y);
+      doc.text("Resp. Produção", 40, y + 8);
+      doc.text("Conferido por", 190, y + 8);
 
-        doc.save("Ordem_de_Producao.pdf");
-      };
+      doc.save(`Ordem_${info.numeroOrdem}.pdf`);
     }
 
     function resetForm() {
