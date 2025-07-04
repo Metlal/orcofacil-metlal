@@ -2,7 +2,8 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Consulta de Lista de Materiais</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liberação de Materiais</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -80,13 +81,14 @@
       <tbody></tbody>
     </table>
 
+    <div id="planoDeCorteAgrupado"></div>
+
     <button class="botao" onclick="salvarNaPlanilha()">💾 Salvar na Planilha</button>
     <button class="botao" onclick="gerarPDF()">🧾 Gerar PDF</button>
 
     <div id="mensagem" class="mensagem"></div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
     let listaDeMateriais = [];
@@ -100,6 +102,7 @@
         .then(data => {
           listaDeMateriais = data;
           preencherTabela(data, numero);
+          gerarPlanoDeCorteAgrupado(data);
         });
     }
 
@@ -126,6 +129,63 @@
 
       tabela.style.display = "table";
       document.getElementById("mensagem").innerText = "";
+    }
+
+    function gerarPlanoDeCorteAgrupado(data) {
+      const agrupado = {};
+
+      data.forEach(item => {
+        const codigo = item.peca;
+        const comprimento = parseFloat(item.comprimento);
+        const barra = parseFloat(item.tamanhoBarra || 600); // default 6m
+        const qtd = parseFloat(item.qtdTotal);
+        const pecasPorBarra = Math.floor(barra / comprimento);
+        const barras = Math.ceil(qtd / pecasPorBarra);
+        const sobra = barra - (pecasPorBarra * comprimento);
+
+        if (!agrupado[codigo]) {
+          agrupado[codigo] = {
+            codigo,
+            barra,
+            comprimento,
+            pecasPorBarra,
+            barras,
+            sobra
+          };
+        } else {
+          agrupado[codigo].barras += barras;
+        }
+      });
+
+      let html = `<h3>Plano de Corte Agrupado</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Peça</th>
+              <th>Tam. Barra (cm)</th>
+              <th>Comprimento da Peça (cm)</th>
+              <th>Peças/Barra</th>
+              <th>Barras</th>
+              <th>Sobra (cm)</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+      for (let key in agrupado) {
+        const item = agrupado[key];
+        html += `
+          <tr>
+            <td>${item.codigo}</td>
+            <td>${item.barra.toFixed(2)}</td>
+            <td>${item.comprimento.toFixed(2)}</td>
+            <td>${item.pecasPorBarra}</td>
+            <td>${item.barras}</td>
+            <td>${item.sobra.toFixed(2)}</td>
+          </tr>`;
+      }
+
+      html += `</tbody></table>`;
+      document.getElementById("planoDeCorteAgrupado").innerHTML = html;
     }
 
     function salvarNaPlanilha() {
@@ -172,7 +232,7 @@
         pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
 
         row.forEach((cell, j) => {
-          pdf.rect(x, y, colWidths[j], rowHeight); // desenha célula
+          pdf.rect(x, y, colWidths[j], rowHeight);
           pdf.setFontSize(10);
           pdf.text(String(cell), x + 2, y + 7, { maxWidth: colWidths[j] - 4 });
           x += colWidths[j];
