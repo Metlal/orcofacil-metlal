@@ -56,7 +56,7 @@
 <body>
   <div class="container">
     <img id="logo" src="logo.jpg" alt="Logo">
-    <h2 style="text-align:center;">Ordem de Produção</h2>
+    <h2>Ordem de Produção</h2>
     <input type="text" id="orcamento" placeholder="Nº do Orçamento">
     <input type="text" id="responsavel" placeholder="Responsável">
     <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
@@ -95,10 +95,7 @@
           orderNumber = data[0].numeroOrdem;
 
           document.getElementById('orderInfo').innerHTML = `
-            <h3>Ordem: ${orderNumber}</h3>
-            <p>Cliente: ${data[0].cliente}</p>
-            <p>Nº do Pedido: ${data[0].pedido}</p>
-            <p>Responsável: ${resp}</p>
+            <h3>Ordem: ${orderNumber} | Pedido: ${data[0].pedido} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
           `;
 
           const tbody = document.querySelector('#orderTable tbody');
@@ -106,8 +103,7 @@
           data.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td>
-              <td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
+              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td><td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
             `;
           });
 
@@ -131,12 +127,11 @@
 
     function generatePDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
+      const doc = new jsPDF({ orientation: 'landscape' });
       let y = 20;
 
       const cliente = orderData[0].cliente;
       const pedido = orderData[0].pedido;
-      const responsavel = orderData[0].responsavel;
 
       doc.setFontSize(12);
       doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
@@ -152,14 +147,16 @@
       const subtotais = {};
       orderData.forEach(item => {
         const produto = item.produto;
-        subtotais[produto] = (subtotais[produto] || 0) + Number(item.quantidade || 0);
+        const qtd = Number(item.quantidade || 0);
+        if (!subtotais[produto]) subtotais[produto] = 0;
+        subtotais[produto] += qtd;
       });
 
       let subY = y + 44;
       doc.text('Subtotais por Produto:', 14, subY);
-      Object.entries(subtotais).forEach(([produto, quantidade]) => {
+      Object.entries(subtotais).forEach(([produto, qtd]) => {
         subY += 8;
-        doc.text(`- ${produto}: ${quantidade} peças`, 18, subY);
+        doc.text(`- ${produto}: ${qtd} peças`, 18, subY);
       });
 
       y = subY + 12;
@@ -167,21 +164,21 @@
       const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
       const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
 
-      headers.concat(rows).forEach((r) => {
+      headers.concat(rows).forEach((r, i) => {
         let x = 14;
         r.forEach((cell) => {
-          doc.rect(x, y, 30, 10);
+          doc.rect(x, y, 40, 10);
           doc.text(String(cell), x + 1, y + 7);
-          x += 30;
+          x += 40;
         });
         y += 10;
       });
 
       y += 20;
-      doc.text("__________________________", 20, y);
-      doc.text("__________________________", 120, y);
-      doc.text("Resp. Produção", 25, y + 8);
-      doc.text("Conferido por", 135, y + 8);
+      doc.text("__________________________", 30, y);
+      doc.text("__________________________", 180, y);
+      doc.text("Resp. Produção", 40, y + 8);
+      doc.text("Conferido por", 190, y + 8);
 
       doc.save(`Ordem_${orderNumber}.pdf`);
     }
