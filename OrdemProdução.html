@@ -144,7 +144,7 @@
       doc.setFontSize(12);
       doc.text(`Ordem de Produção: ${info.numeroOrdem}`, 14, y);
       doc.text(`Cliente: ${info.cliente}`, 14, y + 8);
-      doc.text(`Nº do Pedido: ${info.pedido}`, 14, y + 16);
+      doc.text(`Nº do Pedido: ${document.getElementById('orcamento').value.trim()}`, 14, y + 16);
       doc.text(`Responsável: ${info.responsavel}`, 14, y + 24);
       doc.text(`Total de Peças: ${orderData.reduce((sum, d) => sum + Number(d.quantidade), 0)}`, 14, y + 32);
 
