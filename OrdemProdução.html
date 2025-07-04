@@ -78,7 +78,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuG20OPt5pOpU7I0GNuSvElPE6RLzdwBA9St6dqmofaL5VGnIkIGlXhX5qKaB7aOcS/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
     let orderData = [];
     let orderNumber = '';
 
@@ -141,7 +141,23 @@
       doc.text(`Total de Produtos: ${totalProdutos}`, 14, y + 26);
       doc.text(`Total de Peças: ${totalPecas}`, 14, y + 34);
 
-      y += 44;
+      // Subtotais por produto
+      const subtotais = {};
+      orderData.forEach(item => {
+        const prod = item.produto;
+        const qtd = Number(item.quantidade || 0);
+        if (!subtotais[prod]) subtotais[prod] = 0;
+        subtotais[prod] += qtd;
+      });
+
+      let subY = y + 44;
+      doc.text('Subtotais por Produto:', 14, subY);
+      Object.entries(subtotais).forEach(([produto, quantidade]) => {
+        subY += 8;
+        doc.text(`- ${produto}: ${quantidade} peças`, 18, subY);
+      });
+
+      y = subY + 12;
 
       const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
       const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
