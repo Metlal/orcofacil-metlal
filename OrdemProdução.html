@@ -126,62 +126,80 @@
     }
 
     function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
-      let y = 20;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  let y = 20;
 
-      const cliente = orderData[0].cliente;
-      const pedido = orderData[0].pedido;
+  const cliente = orderData[0].cliente;
+  const pedido = orderData[0].pedido || document.getElementById('orcamento').value.trim();
+  const responsavel = document.getElementById('responsavel').value.trim();
 
-      doc.setFontSize(12);
-      doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
-      doc.text(`Cliente: ${cliente}`, 14, y + 8);
-      doc.text(`Nº do Pedido: ${pedido}`, 14, y + 16);
+  // Mapear total de unidades dos produtos
+  const contagemProdutos = {};
+  orderData.forEach(item => {
+    const produto = item.produto;
+    if (!contagemProdutos[produto]) contagemProdutos[produto] = 0;
+    contagemProdutos[produto]++;
+  });
 
-      const totalProdutos = new Set(orderData.map(d => d.produto)).size;
-      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+  // Total de unidades de produto compradas (vem do Apps Script)
+  const produtosUnicos = [...new Set(orderData.map(d => d.produto))];
+  let totalUnidades = 0;
+  produtosUnicos.forEach(produto => {
+    const linhasProduto = orderData.filter(i => i.produto === produto);
+    const qtdPorLinha = linhasProduto.map(i => i.qtdProduto || 1);
+    totalUnidades += qtdPorLinha[0] || 1; // assume primeira qtdProduto
+  });
 
-      doc.text(`Total de Produtos: ${totalProdutos}`, 14, y + 26);
-      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 34);
+  const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
 
-      const subtotais = {};
-      orderData.forEach(item => {
-        const produto = item.produto;
-        const qtd = Number(item.quantidade || 0);
-        if (!subtotais[produto]) subtotais[produto] = 0;
-        subtotais[produto] += qtd;
-      });
+  // Cabeçalho
+  doc.setFontSize(12);
+  doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
+  doc.text(`Cliente: ${cliente}`, 14, y + 8);
+  doc.text(`Nº do Pedido: ${pedido}`, 14, y + 16);
+  doc.text(`Responsável: ${responsavel}`, 14, y + 24);
 
-      let subY = y + 44;
-      doc.text('Subtotais por Produto:', 14, subY);
-      Object.entries(subtotais).forEach(([produto, qtd]) => {
-        subY += 8;
-        doc.text(`- ${produto}: ${qtd} peças`, 18, subY);
-      });
+  // Totais corretos
+  doc.text(`Total de Produtos: ${totalUnidades}`, 14, y + 34);
+  doc.text(`Total de Peças: ${totalPecas}`, 14, y + 42);
 
-      y = subY + 12;
+  // Subtotais por produto (quantidade de UNIDADES)
+  let subY = y + 52;
+  doc.text('Subtotais por Produto:', 14, subY);
+  produtosUnicos.forEach(produto => {
+    const linhasProduto = orderData.filter(i => i.produto === produto);
+    const qtdProduto = linhasProduto[0]?.qtdProduto || 1;
+    subY += 8;
+    doc.text(`- ${produto}: ${qtdProduto} unidade(s)`, 18, subY);
+  });
 
-      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-      const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
+  // Tabela de peças
+  y = subY + 12;
+  const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
+  const rows = orderData.map(d => [
+    d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || ''
+  ]);
 
-      headers.concat(rows).forEach((r, i) => {
-        let x = 14;
-        r.forEach((cell) => {
-          doc.rect(x, y, 40, 10);
-          doc.text(String(cell), x + 1, y + 7);
-          x += 40;
-        });
-        y += 10;
-      });
+  headers.concat(rows).forEach(r => {
+    let x = 14;
+    r.forEach(cell => {
+      doc.rect(x, y, 40, 10);
+      doc.text(String(cell), x + 1, y + 7);
+      x += 40;
+    });
+    y += 10;
+  });
 
-      y += 20;
-      doc.text("__________________________", 30, y);
-      doc.text("__________________________", 180, y);
-      doc.text("Resp. Produção", 40, y + 8);
-      doc.text("Conferido por", 190, y + 8);
+  // Assinaturas
+  y += 20;
+  doc.text("__________________________", 30, y);
+  doc.text("__________________________", 180, y);
+  doc.text("Resp. Produção", 40, y + 8);
+  doc.text("Conferido por", 190, y + 8);
 
-      doc.save(`Ordem_${orderNumber}.pdf`);
-    }
+  doc.save(`Ordem_${orderNumber}.pdf`);
+}
   </script>
 </body>
 </html>
