@@ -6,8 +6,9 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
+      margin: 0;
       padding: 40px;
+      background: #f4f4f4;
     }
     .container {
       background: white;
@@ -20,7 +21,7 @@
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 20px;
+      margin-top: 15px;
     }
     th, td {
       border: 1px solid #999;
@@ -40,39 +41,37 @@
       cursor: pointer;
       border-radius: 4px;
     }
+    .botao:hover {
+      background-color: #1976D2;
+    }
     input {
       padding: 10px;
-      margin: 5px;
-      width: 250px;
       font-size: 16px;
-    }
-    #logo {
-      display: block;
-      margin: 0 auto 20px auto;
-      max-width: 120px;
+      margin: 5px 0;
+      width: 250px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <img id="logo" src="logo.jpg" alt="Logo">
-    <h2>Ordem de Produção</h2>
-    <input type="text" id="orcamento" placeholder="Nº do Orçamento">
-    <input type="text" id="responsavel" placeholder="Responsável">
+    <h2>✍️ Gerar Ordem de Produção</h2>
+    <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
+    <input type="text" id="responsavel" placeholder="Responsável" />
     <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
 
     <div id="orderInfo"></div>
     <table id="orderTable" style="display:none;">
       <thead>
         <tr>
-          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th><th>Descrição</th>
+          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <button class="botao" onclick="saveOrder()">Salvar Ordem</button>
-    <button class="botao" onclick="generatePDF()">Gerar PDF</button>
+    <button class="botao" onclick="saveOrder()">💾 Salvar Ordem</button>
+    <button class="botao" onclick="generatePDF()">🧾 Gerar PDF</button>
+
     <div id="message"></div>
   </div>
 
@@ -91,16 +90,12 @@
         .then(response => response.json())
         .then(data => {
           if (!data.length) return alert('Nenhum dado encontrado.');
+
           orderData = data;
           orderNumber = data[0].numeroOrdem;
 
           document.getElementById('orderInfo').innerHTML = `
-            <h3>
-              Ordem de Produção: ${orderNumber}<br>
-              Cliente: ${data[0].cliente}<br>
-              Nº do Pedido: ${data[0].pedido}<br>
-              Responsável: ${resp}
-            </h3>
+            <h3>Ordem: ${orderNumber} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
           `;
 
           const tbody = document.querySelector('#orderTable tbody');
@@ -108,8 +103,11 @@
           data.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td>
-              <td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
+              <td>${item.produto}</td>
+              <td>${item.peca}</td>
+              <td>${item.tipo}</td>
+              <td>${item.comprimento}</td>
+              <td>${item.quantidade}</td>
             `;
           });
 
@@ -123,66 +121,84 @@
       fetch(SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(orderData),
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
       .then(response => response.text())
       .then(message => {
         document.getElementById('message').innerText = message;
+      })
+      .catch(error => {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar a ordem.');
       });
     }
 
-    function generatePDF() {
+    async function generatePDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
-      let y = 20;
+      const doc = new jsPDF();
 
-      doc.setFontSize(12);
-      doc.text(`Ordem de Produção: ${orderData[0].numeroOrdem}`, 14, y);
-      doc.text(`Cliente: ${orderData[0].cliente}`, 14, y + 8);
-      doc.text(`Nº do Pedido: ${orderData[0].pedido}`, 14, y + 16);
-      doc.text(`Responsável: ${orderData[0].responsavel}`, 14, y + 24);
+      const logo = new Image();
+      logo.src = 'logotipo.png';
+      await new Promise(resolve => { logo.onload = resolve });
 
-      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade), 0);
-      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 32);
+      doc.addImage(logo, 'JPEG', 80, 10, 50, 20); // Centralizado no topo
 
-      // Subtotais de produtos vendidos (qtdProduto)
-      const produtosVendidos = {};
+      const dataHoje = new Date().toLocaleDateString();
+      const orc = document.getElementById('orcamento').value.trim();
+      const resp = document.getElementById('responsavel').value.trim();
+      const cliente = orderData[0]?.cliente || '';
+      const ordem = orderNumber;
+
+      let totalPecas = 0;
+      let produtosUnicos = new Set();
       orderData.forEach(item => {
-        if (!produtosVendidos[item.produto]) {
-          produtosVendidos[item.produto] = item.qtdProduto || 1;
-        }
+        produtosUnicos.add(item.produto);
+        totalPecas += Number(item.quantidade);
       });
+      const totalProdutos = produtosUnicos.size;
 
-      doc.text(`Subtotais por Produto:`, 14, y + 40);
-      let subY = y + 48;
-      Object.entries(produtosVendidos).forEach(([produto, qtd]) => {
-        doc.text(`- ${produto}: ${qtd} unidade(s)`, 18, subY);
-        subY += 8;
+      let y = 40;
+      doc.setFontSize(12);
+      doc.text(`📄 Ordem de Produção: ${ordem}`, 14, y); y += 8;
+      doc.text(`📦 Pedido (Orçamento): ${orc}`, 14, y); y += 8;
+      doc.text(`👤 Cliente: ${cliente}`, 14, y); y += 8;
+      doc.text(`👷 Responsável: ${resp}`, 14, y); y += 8;
+      doc.text(`📅 Data: ${dataHoje}`, 14, y); y += 8;
+      doc.text(`🔢 Total de Produtos: ${totalProdutos}`, 14, y); y += 8;
+      doc.text(`🔩 Total de Peças: ${totalPecas}`, 14, y); y += 12;
+
+      const headers = ["Produto", "Peça", "Tipo", "Comprimento", "Quantidade"];
+      const colWidths = [40, 40, 30, 40, 30];
+      const startX = 14;
+
+      headers.forEach((header, i) => {
+        const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.setFillColor(200, 200, 200);
+        doc.rect(x, y, colWidths[i], 10, 'F');
+        doc.setTextColor(0);
+        doc.text(header, x + 2, y + 7);
       });
+      y += 10;
 
-      y = subY + 4;
-
-      // Cabeçalho da tabela
-      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-      const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
-
-      headers.concat(rows).forEach((r, i) => {
-        let x = 14;
-        r.forEach((cell, j) => {
-          doc.rect(x, y, 45, 10);
+      orderData.forEach(item => {
+        const row = [item.produto, item.peca, item.tipo, String(item.comprimento), String(item.quantidade)];
+        row.forEach((cell, i) => {
+          const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+          doc.rect(x, y, colWidths[i], 10);
           doc.text(String(cell), x + 2, y + 7);
-          x += 45;
         });
         y += 10;
       });
 
       y += 20;
-      doc.text("__________________________", 50, y);
-      doc.text("__________________________", 180, y);
-      doc.text("Resp. Produção", 60, y + 8);
-      doc.text("Conferido por", 190, y + 8);
+      doc.text("____________________________", 20, y);
+      doc.text("____________________________", 120, y);
+      doc.text("Responsável pela Produção", 25, y + 8);
+      doc.text("Conferido por", 140, y + 8);
 
-      doc.save(`Ordem_${orderData[0].numeroOrdem}.pdf`);
+      doc.save("Ordem_de_Producao.pdf");
     }
   </script>
 </body>
