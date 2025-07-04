@@ -1,26 +1,45 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Ordem de Produção</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
       padding: 40px;
+      margin: 0;
     }
     .container {
       background: white;
       padding: 20px;
-      border-radius: 10px;
       max-width: 1000px;
       margin: auto;
+      border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 10px 5px 0;
+      width: 240px;
+    }
+    .botao {
+      padding: 10px 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .botao:hover {
+      background-color: #1976D2;
+    }
     table {
-      border-collapse: collapse;
       width: 100%;
-      margin-top: 20px;
+      margin-top: 15px;
+      border-collapse: collapse;
     }
     th, td {
       border: 1px solid #999;
@@ -31,56 +50,49 @@
       background-color: #333;
       color: white;
     }
-    .botao {
+    #mensagem {
       margin-top: 15px;
-      padding: 10px 15px;
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    input {
-      padding: 10px;
-      margin: 5px;
-      width: 250px;
-      font-size: 16px;
-    }
-    #logo {
-      display: block;
-      margin: 0 auto 20px auto;
-      max-width: 120px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <img id="logo" src="logo.jpg" alt="Logo">
-    <h2>Ordem de Produção</h2>
-    <input type="text" id="orcamento" placeholder="Nº do Orçamento">
-    <input type="text" id="responsavel" placeholder="Responsável">
+    <h2>✍️ Ordem de Produção</h2>
+    <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
+    <input type="text" id="responsavel" placeholder="Responsável" />
     <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
+    <button class="botao" onclick="resetForm()">Nova Busca</button>
 
     <div id="orderInfo"></div>
+    <div id="summary"></div>
+
     <table id="orderTable" style="display:none;">
       <thead>
         <tr>
-          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th><th>Descrição Técnica</th>
+          <th>Produto</th>
+          <th>Peça</th>
+          <th>Tipo</th>
+          <th>Comprimento</th>
+          <th>Quantidade</th>
+          <th>Descrição</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <button class="botao" onclick="saveOrder()">Salvar Ordem</button>
-    <button class="botao" onclick="generatePDF()">Gerar PDF</button>
-    <div id="message"></div>
+    <button class="botao" onclick="saveOrder()">💾 Salvar Ordem</button>
+    <button class="botao" onclick="generatePDF()">🧾 Gerar PDF</button>
+
+    <div id="mensagem"></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
     let orderData = [];
     let orderNumber = '';
+    let pedidoNumber = '';
 
     function generateOrder() {
       const orc = document.getElementById('orcamento').value.trim();
@@ -88,14 +100,24 @@
       if (!orc || !resp) return alert('Preencha todos os campos');
 
       fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
-        .then(response => response.json())
+        .then(res => res.json())
         .then(data => {
-          if (!data.length) return alert('Nenhum dado encontrado.');
+          if (!data.length) return alert("Nenhum dado encontrado.");
+
           orderData = data;
           orderNumber = data[0].numeroOrdem;
+          pedidoNumber = data[0].pedido;
+
+          const cliente = data[0].cliente;
+          const totalProdutos = new Set(data.map(d => d.produto)).size;
+          const totalPecas = data.reduce((soma, item) => soma + Number(item.quantidade), 0);
 
           document.getElementById('orderInfo').innerHTML = `
-            <h3>Ordem: ${orderNumber} | Pedido: ${data[0].orcamento} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
+            <h3>Ordem de Produção: ${orderNumber} | Pedido: ${pedidoNumber} | Cliente: ${cliente}</h3>
+            <p>Responsável: ${resp} | Data: ${new Date().toLocaleDateString()}</p>
+          `;
+          document.getElementById('summary').innerHTML = `
+            <p><strong>Total de Produtos:</strong> ${totalProdutos} | <strong>Total de Peças:</strong> ${totalPecas}</p>
           `;
 
           const tbody = document.querySelector('#orderTable tbody');
@@ -103,7 +125,12 @@
           data.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td><td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
+              <td>${item.produto}</td>
+              <td>${item.peca}</td>
+              <td>${item.tipo}</td>
+              <td>${item.comprimento}</td>
+              <td>${item.quantidade}</td>
+              <td>${item.descricao || ''}</td>
             `;
           });
 
@@ -112,73 +139,69 @@
     }
 
     function saveOrder() {
-      if (!orderData.length) return alert('Gere uma ordem antes.');
+      if (!orderData.length) return alert("Gere uma ordem antes.");
 
       fetch(SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(orderData),
         headers: { 'Content-Type': 'application/json' }
       })
-      .then(response => response.text())
-      .then(message => {
-        document.getElementById('message').innerText = message;
+      .then(r => r.text())
+      .then(msg => {
+        document.getElementById('mensagem').innerText = msg;
       });
     }
 
     function generatePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      let y = 20;
+      const logo = new Image();
+      logo.src = 'logo.jpg';
 
-      doc.setFontSize(12);
-      doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
-      doc.text(`Cliente: ${orderData[0].cliente}`, 14, y + 8);
-      doc.text(`Nº do Pedido: ${orderData[0].orcamento}`, 14, y + 16);
+      logo.onload = function () {
+        doc.addImage(logo, 'JPEG', 80, 10, 50, 20);
 
-      const totalProdutos = new Set(orderData.map(d => d.produto)).size;
-      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
-
-      doc.text(`Total de Produtos: ${totalProdutos}`, 14, y + 26);
-      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 34);
-
-      // Subtotais por produto
-      const subtotais = {};
-      orderData.forEach(item => {
-        const prod = item.produto;
-        const qtd = Number(item.quantidade || 0);
-        if (!subtotais[prod]) subtotais[prod] = 0;
-        subtotais[prod] += qtd;
-      });
-
-      let subY = y + 44;
-      doc.text('Subtotais por Produto:', 14, subY);
-      Object.entries(subtotais).forEach(([produto, quantidade]) => {
-        subY += 8;
-        doc.text(`- ${produto}: ${quantidade} peças`, 18, subY);
-      });
-
-      y = subY + 12;
-
-      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-      const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
-
-      headers.concat(rows).forEach((r, i) => {
-        let x = 14;
-        r.forEach((cell, j) => {
-          doc.rect(x, y, 30, 10);
-          doc.text(String(cell), x + 1, y + 7);
-          x += 30;
-        });
+        let y = 35;
+        doc.setFontSize(12);
+        doc.text(document.getElementById('orderInfo').innerText, 14, y);
         y += 10;
-      });
+        doc.text(document.getElementById('summary').innerText, 14, y);
+        y += 10;
 
-      y += 20;
-      doc.text("__________________________", 20, y);
-      doc.text("__________________________", 120, y);
-      doc.text("Resp. Produção", 25, y + 8);
-      doc.text("Conferido por", 135, y + 8);
+        const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
+        const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
 
-      doc.save(`Ordem_${orderNumber}.pdf`);
+        headers.concat(rows).forEach(row => {
+          let x = 14;
+          row.forEach(cell => {
+            doc.rect(x, y, 30, 10);
+            doc.text(String(cell), x + 2, y + 7);
+            x += 30;
+          });
+          y += 10;
+        });
+
+        y += 20;
+        doc.text("__________________________", 30, y);
+        doc.text("__________________________", 130, y);
+        doc.text("Responsável pela Produção", 35, y + 8);
+        doc.text("Conferido por", 140, y + 8);
+
+        doc.save("Ordem_de_Producao.pdf");
+      };
+    }
+
+    function resetForm() {
+      orderData = [];
+      orderNumber = '';
+      pedidoNumber = '';
+      document.getElementById('orcamento').value = '';
+      document.getElementById('responsavel').value = '';
+      document.getElementById('orderInfo').innerHTML = '';
+      document.getElementById('summary').innerHTML = '';
+      document.querySelector('#orderTable tbody').innerHTML = '';
+      document.getElementById('orderTable').style.display = 'none';
+      document.getElementById('mensagem').innerText = '';
     }
   </script>
 </body>
