@@ -91,102 +91,104 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
     let listaDeMateriais = [];
 
-    function gerarLista() {
-      const numero = document.getElementById("numeroOrcamento").value.trim();
-      if (!numero) return alert("Digite o número do orçamento!");
+    let html = `<table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descrição</th>
+            <th>Qtd. Peças</th>
+            <th>Comp. (cm)</th>
+            <th>Tam. Barra (cm)</th>
+            <th>Peças/Barra</th>
+            <th>Barras Necessárias</th>
+            <th>Sobra (cm)</th>
+            <th>Alerta</th>
+          </tr>
+        </thead>
+        <tbody>`;
 
-      fetch(`${SCRIPT_URL}?orcamento=${numero}`)
-        .then(res => res.json())
-        .then(data => {
-          listaDeMateriais = data;
-          preencherTabela(data, numero);
-        });
-    }
+      const planoAgrupado = {};
 
-    function preencherTabela(data, numero) {
-      const tabela = document.getElementById("tabelaMateriais");
-      const corpo = tabela.querySelector("tbody");
-      corpo.innerHTML = "";
+      dados.forEach(item => {
+        const codigo = item.codigo;
+        const comp = parseFloat(item.comprimento); // já em cm
+        const barra = parseFloat(item.tamanhoBarra); // já em cm
+        const qtd = parseFloat(item.quantidade);
+        const porBarra = parseInt(item.pecasPorBarra);
+        const barras = parseInt(item.barrasNecessarias);
+        const sobra = parseFloat(item.sobraPorBarra); // já em cm
 
-      document.getElementById("tituloLista").innerHTML = `<h3>Lista de Materiais do Orçamento ${numero}</h3>`;
+        html += `
+          <tr>
+            <td>${codigo}</td>
+            <td>${item.descricao}</td>
+            <td>${qtd}</td>
+            <td>${formatar(comp)}</td>
+            <td>${formatar(barra)}</td>
+            <td>${porBarra}</td>
+            <td>${barras}</td>
+            <td>${formatar(sobra)}</td>
+            <td class="${item.alerta ? 'alerta' : ''}">${item.alerta || ''}</td>
+          </tr>`;
 
-      data.forEach(item => {
-        const row = corpo.insertRow();
-        row.innerHTML = `
-          <td>${item.produto}</td>
-          <td>${item.peca}</td>
-          <td>${item.tipo}</td>
-          <td>${item.comprimento}</td>
-          <td>${item.qtdTotal}</td>
-          <td>${item.planoCorte}</td>
-          <td>${item.barrasNecessarias}</td>
-          <td>${item.aproveitamento}</td>
-        `;
-      });
-
-      tabela.style.display = "table";
-      document.getElementById("mensagem").innerText = "";
-    }
-
-    function salvarNaPlanilha() {
-      if (listaDeMateriais.length === 0) {
-        alert("Gere uma lista antes de salvar!");
-        return;
-      }
-
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(listaDeMateriais),
-        headers: {
-          'Content-Type': 'application/json'
+        // Agrupamento para plano de corte
+        if (!planoAgrupado[codigo]) {
+          planoAgrupado[codigo] = {
+            codigo: codigo,
+            barra: barra,
+            comp: comp,
+            porBarra: porBarra,
+            barras: barras,
+            sobra: sobra
+          };
+        } else {
+          planoAgrupado[codigo].barras += barras;
         }
-      })
-      .then(res => res.text())
-      .then(msg => {
-        document.getElementById("mensagem").innerText = msg;
-      })
-      .catch(() => {
-        document.getElementById("mensagem").innerText = "Erro ao salvar na planilha.";
       });
+
+      html += `</tbody></table>`;
+      document.getElementById("resultado").innerHTML = html;
+
+      // Gerar plano de corte agrupado
+      let planoHtml = `<h3>Plano de Corte Agrupado</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Tam. Barra (cm)</th>
+            <th>Comprimento da Peça (cm)</th>
+            <th>Peças/Barra</th>
+            <th>Barras</th>
+            <th>Sobra (cm)</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      for (let cod in planoAgrupado) {
+        const p = planoAgrupado[cod];
+        planoHtml += `
+          <tr>
+            <td>${p.codigo}</td>
+            <td>${formatar(p.barra)}</td>
+            <td>${formatar(p.comp)}</td>
+            <td>${p.porBarra}</td>
+            <td>${p.barras}</td>
+            <td>${formatar(p.sobra)}</td>
+          </tr>`;
+      }
+      planoHtml += `</tbody></table>`;
+      document.getElementById("planoDeCorte").innerHTML = planoHtml;
     }
 
     function gerarPDF() {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF();
-      const titulo = document.getElementById("tituloLista").innerText;
-      const rows = [...document.querySelectorAll("table tr")].map(tr =>
-        [...tr.querySelectorAll("th, td")].map(td => td.innerText)
-      );
-
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text(titulo, 14, 20);
-
-      const startY = 30;
-      const rowHeight = 10;
-      const colWidths = [25, 25, 25, 30, 25, 30, 25, 40];
-      let y = startY;
-
-      rows.forEach((row, i) => {
-        let x = 14;
-        pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
-
-        row.forEach((cell, j) => {
-          pdf.rect(x, y, colWidths[j], rowHeight); // desenha célula
-          pdf.setFontSize(10);
-          pdf.text(String(cell), x + 2, y + 7, { maxWidth: colWidths[j] - 4 });
-          x += colWidths[j];
-        });
-
-        y += rowHeight;
-
-        if (y > 270) {
-          pdf.addPage();
-          y = startY;
-        }
-      });
-
-      pdf.save("Lista_de_Materiais.pdf");
+      const janela = window.open('', '', 'width=800,height=600');
+      const conteudo = document.getElementById("resultado").innerHTML + document.getElementById("planoDeCorte").innerHTML;
+      janela.document.write('<html><head><title>Lista de Materiais</title></head><body>');
+      janela.document.write('<h2 style="text-align:center;">Lista de Materiais</h2>');
+      janela.document.write(conteudo);
+      janela.document.write('</body></html>');
+      janela.document.close();
+      janela.print();
     }
   </script>
 </body>
