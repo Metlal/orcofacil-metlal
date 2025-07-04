@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Ordem de Produção</title>
   <style>
     body {
@@ -65,7 +65,7 @@
     <table id="orderTable" style="display:none;">
       <thead>
         <tr>
-          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th><th>Descrição Técnica</th>
+          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th><th>Descrição</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -78,7 +78,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
     let orderData = [];
     let orderNumber = '';
 
@@ -95,7 +95,12 @@
           orderNumber = data[0].numeroOrdem;
 
           document.getElementById('orderInfo').innerHTML = `
-            <h3>Ordem: ${orderNumber} | Pedido: ${data[0].pedido} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
+            <h3>
+              Ordem de Produção: ${orderNumber}<br>
+              Cliente: ${data[0].cliente}<br>
+              Nº do Pedido: ${data[0].pedido}<br>
+              Responsável: ${resp}
+            </h3>
           `;
 
           const tbody = document.querySelector('#orderTable tbody');
@@ -103,7 +108,8 @@
           data.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td><td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
+              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td>
+              <td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
             `;
           });
 
@@ -130,57 +136,53 @@
       const doc = new jsPDF({ orientation: 'landscape' });
       let y = 20;
 
-      const cliente = orderData[0].cliente;
-      const pedido = orderData[0].pedido;
-
       doc.setFontSize(12);
-      doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
-      doc.text(`Cliente: ${cliente}`, 14, y + 8);
-      doc.text(`Nº do Pedido: ${pedido}`, 14, y + 16);
+      doc.text(`Ordem de Produção: ${orderData[0].numeroOrdem}`, 14, y);
+      doc.text(`Cliente: ${orderData[0].cliente}`, 14, y + 8);
+      doc.text(`Nº do Pedido: ${orderData[0].pedido}`, 14, y + 16);
+      doc.text(`Responsável: ${orderData[0].responsavel}`, 14, y + 24);
 
-      const totalProdutos = new Set(orderData.map(d => d.produto)).size;
-      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade), 0);
+      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 32);
 
-      doc.text(`Total de Produtos: ${totalProdutos}`, 14, y + 26);
-      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 34);
-
-      const subtotais = {};
+      // Subtotais de produtos vendidos (qtdProduto)
+      const produtosVendidos = {};
       orderData.forEach(item => {
-        const produto = item.produto;
-        const qtd = Number(item.quantidade || 0);
-        if (!subtotais[produto]) subtotais[produto] = 0;
-        subtotais[produto] += qtd;
+        if (!produtosVendidos[item.produto]) {
+          produtosVendidos[item.produto] = item.qtdProduto || 1;
+        }
       });
 
-      let subY = y + 44;
-      doc.text('Subtotais por Produto:', 14, subY);
-      Object.entries(subtotais).forEach(([produto, qtd]) => {
+      doc.text(`Subtotais por Produto:`, 14, y + 40);
+      let subY = y + 48;
+      Object.entries(produtosVendidos).forEach(([produto, qtd]) => {
+        doc.text(`- ${produto}: ${qtd} unidade(s)`, 18, subY);
         subY += 8;
-        doc.text(`- ${produto}: ${qtd} peças`, 18, subY);
       });
 
-      y = subY + 12;
+      y = subY + 4;
 
+      // Cabeçalho da tabela
       const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
       const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
 
       headers.concat(rows).forEach((r, i) => {
         let x = 14;
-        r.forEach((cell) => {
-          doc.rect(x, y, 40, 10);
-          doc.text(String(cell), x + 1, y + 7);
-          x += 40;
+        r.forEach((cell, j) => {
+          doc.rect(x, y, 45, 10);
+          doc.text(String(cell), x + 2, y + 7);
+          x += 45;
         });
         y += 10;
       });
 
       y += 20;
-      doc.text("__________________________", 30, y);
+      doc.text("__________________________", 50, y);
       doc.text("__________________________", 180, y);
-      doc.text("Resp. Produção", 40, y + 8);
+      doc.text("Resp. Produção", 60, y + 8);
       doc.text("Conferido por", 190, y + 8);
 
-      doc.save(`Ordem_${orderNumber}.pdf`);
+      doc.save(`Ordem_${orderData[0].numeroOrdem}.pdf`);
     }
   </script>
 </body>
