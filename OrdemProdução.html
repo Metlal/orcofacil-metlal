@@ -114,7 +114,7 @@
     function saveOrder() {
       if (!orderData.length) return alert('Gere uma ordem antes.');
 
-      fetch(SCRIPT_URL, {
+      fetch('1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4', {
         method: 'POST',
         body: JSON.stringify(orderData),
         headers: { 'Content-Type': 'application/json' }
