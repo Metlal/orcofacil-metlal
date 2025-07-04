@@ -6,40 +6,22 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 40px;
       margin: 0;
+      padding: 40px;
+      background: #f4f4f4;
     }
     .container {
       background: white;
       padding: 20px;
+      border-radius: 10px;
       max-width: 1000px;
       margin: auto;
-      border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    input {
-      padding: 10px;
-      font-size: 16px;
-      margin: 5px 10px 5px 0;
-      width: 240px;
-    }
-    .botao {
-      padding: 10px 15px;
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-    .botao:hover {
-      background-color: #1976D2;
-    }
     table {
+      border-collapse: collapse;
       width: 100%;
       margin-top: 15px;
-      border-collapse: collapse;
     }
     th, td {
       border: 1px solid #999;
@@ -50,23 +32,34 @@
       background-color: #333;
       color: white;
     }
-    #mensagem {
+    .botao {
       margin-top: 15px;
-      font-weight: bold;
+      padding: 10px 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .botao:hover {
+      background-color: #1976D2;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      width: 250px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>✍️ Ordem de Produção</h2>
+    <h2>✍️ Gerar Ordem de Produção</h2>
     <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
     <input type="text" id="responsavel" placeholder="Responsável" />
     <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
-    <button class="botao" onclick="resetForm()">Nova Busca</button>
-
+<button class="botao" onclick="novaPesquisa()">🔄 Nova Pesquisa</button>
     <div id="orderInfo"></div>
-    <div id="summary"></div>
-
     <table id="orderTable" style="display:none;">
       <thead>
         <tr>
@@ -75,7 +68,6 @@
           <th>Tipo</th>
           <th>Comprimento</th>
           <th>Quantidade</th>
-          <th>Descrição</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -84,40 +76,39 @@
     <button class="botao" onclick="saveOrder()">💾 Salvar Ordem</button>
     <button class="botao" onclick="generatePDF()">🧾 Gerar PDF</button>
 
-    <div id="mensagem"></div>
+    <div id="message"></div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuG20OPt5pOpU7I0GNuSvElPE6RLzdwBA9St6dqmofaL5VGnIkIGlXhX5qKaB7aOcS/exec';
     let orderData = [];
     let orderNumber = '';
-    let pedidoNumber = '';
 
     function generateOrder() {
       const orc = document.getElementById('orcamento').value.trim();
       const resp = document.getElementById('responsavel').value.trim();
       if (!orc || !resp) return alert('Preencha todos os campos');
 
-      fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
-        .then(res => res.json())
+      const url = `${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`;
+      console.log("Consultando URL:", url);  // ajuda para depuração
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error("Erro na resposta da API");
+          return response.json();
+        })
         .then(data => {
-          if (!data.length) return alert("Nenhum dado encontrado.");
+          if (!data.length) {
+            alert('Nenhum dado encontrado.');
+            return;
+          }
 
           orderData = data;
-          orderNumber = data[0].numeroOrdem;
-          pedidoNumber = data[0].pedido;
-
-          const cliente = data[0].cliente;
-          const totalProdutos = new Set(data.map(d => d.produto)).size;
-          const totalPecas = data.reduce((soma, item) => soma + Number(item.quantidade), 0);
+          orderNumber = data[0].numeroOrdem || 'Sem número';
 
           document.getElementById('orderInfo').innerHTML = `
-            <h3>Ordem de Produção: ${orderNumber} | Pedido: ${pedidoNumber} | Cliente: ${cliente}</h3>
-            <p>Responsável: ${resp} | Data: ${new Date().toLocaleDateString()}</p>
-          `;
-          document.getElementById('summary').innerHTML = `
-            <p><strong>Total de Produtos:</strong> ${totalProdutos} | <strong>Total de Peças:</strong> ${totalPecas}</p>
+            <h3>Ordem: ${orderNumber} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
           `;
 
           const tbody = document.querySelector('#orderTable tbody');
@@ -130,79 +121,112 @@
               <td>${item.tipo}</td>
               <td>${item.comprimento}</td>
               <td>${item.quantidade}</td>
-              <td>${item.descricao || ''}</td>
             `;
           });
 
           document.getElementById('orderTable').style.display = 'table';
+        })
+        .catch(error => {
+          console.error('Erro ao buscar dados da ordem:', error);
+          alert('Erro ao buscar dados da ordem.');
         });
     }
 
     function saveOrder() {
-      if (!orderData.length) return alert("Gere uma ordem antes.");
+      if (!orderData.length) return alert('Gere uma ordem antes.');
 
       fetch(SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(orderData),
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
-      .then(r => r.text())
-      .then(msg => {
-        document.getElementById('mensagem').innerText = msg;
+      .then(response => response.text())
+      .then(message => {
+        document.getElementById('message').innerText = message;
+      })
+      .catch(error => {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar a ordem.');
       });
     }
 
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      const logo = new Image();
-      logo.src = 'logo.jpg';
+   function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-      logo.onload = function () {
-        doc.addImage(logo, 'JPEG', 80, 10, 50, 20);
+  const title = document.getElementById('orderInfo').innerText;
+  doc.setFontSize(14);
+  doc.text(title, 14, 20);
 
-        let y = 35;
-        doc.setFontSize(12);
-        doc.text(document.getElementById('orderInfo').innerText, 14, y);
-        y += 10;
-        doc.text(document.getElementById('summary').innerText, 14, y);
-        y += 10;
+  const grouped = {};
+  let totalPecas = 0;
+  let produtoContador = {};
 
-        const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-        const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
+  orderData.forEach(item => {
+    const key = `${item.produto}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(item);
+    totalPecas += Number(item.quantidade);
 
-        headers.concat(rows).forEach(row => {
-          let x = 14;
-          row.forEach(cell => {
-            doc.rect(x, y, 30, 10);
-            doc.text(String(cell), x + 2, y + 7);
-            x += 30;
-          });
-          y += 10;
-        });
+    // Contagem de quantas vezes o produto apareceu (mesmo nome)
+    if (!produtoContador[key]) produtoContador[key] = 1;
+    else produtoContador[key]++;
+  });
 
-        y += 20;
-        doc.text("__________________________", 30, y);
-        doc.text("__________________________", 130, y);
-        doc.text("Responsável pela Produção", 35, y + 8);
-        doc.text("Conferido por", 140, y + 8);
+  let totalProdutos = 0;
+  for (let key in produtoContador) {
+    totalProdutos += produtoContador[key];
+  }
 
-        doc.save("Ordem_de_Producao.pdf");
-      };
-    }
+  let y = 30;
+  for (let produto in grouped) {
+    doc.setFontSize(12);
+    doc.text(`🔧 Produto: ${produto}`, 14, y);
+    y += 8;
 
-    function resetForm() {
-      orderData = [];
-      orderNumber = '';
-      pedidoNumber = '';
-      document.getElementById('orcamento').value = '';
-      document.getElementById('responsavel').value = '';
-      document.getElementById('orderInfo').innerHTML = '';
-      document.getElementById('summary').innerHTML = '';
-      document.querySelector('#orderTable tbody').innerHTML = '';
-      document.getElementById('orderTable').style.display = 'none';
-      document.getElementById('mensagem').innerText = '';
-    }
+    const headers = ["Peça", "Tipo", "Comprimento", "Quantidade"];
+    const colWidths = [50, 40, 40, 30];
+    const startX = 14;
+
+    headers.forEach((header, i) => {
+      doc.setFillColor(200, 200, 200);
+      doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), y, colWidths[i], 10, 'F');
+      doc.setTextColor(0);
+      doc.text(header, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0) + 2, y + 7);
+    });
+    y += 10;
+
+    grouped[produto].forEach(item => {
+      const linha = [item.peca, item.tipo, String(item.comprimento), String(item.quantidade)];
+      linha.forEach((cell, i) => {
+        const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.rect(x, y, colWidths[i], 10);
+        doc.text(cell, x + 2, y + 7);
+      });
+      y += 10;
+    });
+
+    y += 5;
+  }
+
+  y += 10;
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`📦 Total de Produtos: ${totalProdutos}`, 14, y);
+  y += 8;
+  doc.text(`🔩 Total de Peças: ${totalPecas}`, 14, y);
+
+  y += 20;
+  doc.text("____________________________", 20, y);
+  doc.text("____________________________", 120, y);
+  doc.text("Responsável pela Produção", 25, y + 8);
+  doc.text("Conferido por", 140, y + 8);
+
+  doc.save("Ordem_de_Producao.pdf");
+}
+
   </script>
 </body>
 </html>
