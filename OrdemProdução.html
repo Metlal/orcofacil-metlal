@@ -135,11 +135,11 @@
       });
     }
 
-    async function generatePDF() {
+    function generatePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const logo = new Image();
-      logo.src = 'logo.jpg';
+      logo.src = 'logotipo.png';
 
       logo.onload = function () {
         doc.addImage(logo, 'JPEG', 80, 10, 50, 20);
