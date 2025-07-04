@@ -135,12 +135,9 @@
   const responsavel = document.getElementById('responsavel').value.trim();
 
   // Mapear total de unidades dos produtos
-  const contagemProdutos = {};
-  orderData.forEach(item => {
-    const produto = item.produto;
-    if (!contagemProdutos[produto]) contagemProdutos[produto] = 0;
-    contagemProdutos[produto]++;
-  });
+  const totalProdutos = orderData.reduce((soma, item) => {
+  return soma + (item.qtdProduto ? Number(item.qtdProduto) : 0);
+}, 0);
 
   // Total de unidades de produto compradas (vem do Apps Script)
   const produtosUnicos = [...new Set(orderData.map(d => d.produto))];
