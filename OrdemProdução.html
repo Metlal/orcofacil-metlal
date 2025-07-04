@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Ordem de Produção</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 40px;
       background: #f4f4f4;
+      padding: 40px;
     }
     .container {
       background: white;
@@ -21,7 +20,7 @@
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 15px;
+      margin-top: 20px;
     }
     th, td {
       border: 1px solid #999;
@@ -41,41 +40,39 @@
       cursor: pointer;
       border-radius: 4px;
     }
-    .botao:hover {
-      background-color: #1976D2;
-    }
     input {
       padding: 10px;
-      font-size: 16px;
-      margin: 5px 0;
+      margin: 5px;
       width: 250px;
+      font-size: 16px;
+    }
+    #logo {
+      display: block;
+      margin: 0 auto 20px auto;
+      max-width: 120px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>✍️ Gerar Ordem de Produção</h2>
-    <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
-    <input type="text" id="responsavel" placeholder="Responsável" />
+    <img id="logo" src="logo.jpg" alt="Logo">
+    <h2 style="text-align:center;">Ordem de Produção</h2>
+    <input type="text" id="orcamento" placeholder="Nº do Orçamento">
+    <input type="text" id="responsavel" placeholder="Responsável">
     <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
-<button class="botao" onclick="novaPesquisa()">🔄 Nova Pesquisa</button>
+
     <div id="orderInfo"></div>
     <table id="orderTable" style="display:none;">
       <thead>
         <tr>
-          <th>Produto</th>
-          <th>Peça</th>
-          <th>Tipo</th>
-          <th>Comprimento</th>
-          <th>Quantidade</th>
+          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th><th>Descrição Técnica</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
 
-    <button class="botao" onclick="saveOrder()">💾 Salvar Ordem</button>
-    <button class="botao" onclick="generatePDF()">🧾 Gerar PDF</button>
-
+    <button class="botao" onclick="saveOrder()">Salvar Ordem</button>
+    <button class="botao" onclick="generatePDF()">Gerar PDF</button>
     <div id="message"></div>
   </div>
 
@@ -90,25 +87,18 @@
       const resp = document.getElementById('responsavel').value.trim();
       if (!orc || !resp) return alert('Preencha todos os campos');
 
-      const url = `${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`;
-      console.log("Consultando URL:", url);  // ajuda para depuração
-
-      fetch(url)
-        .then(response => {
-          if (!response.ok) throw new Error("Erro na resposta da API");
-          return response.json();
-        })
+      fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
+        .then(response => response.json())
         .then(data => {
-          if (!data.length) {
-            alert('Nenhum dado encontrado.');
-            return;
-          }
-
+          if (!data.length) return alert('Nenhum dado encontrado.');
           orderData = data;
-          orderNumber = data[0].numeroOrdem || 'Sem número';
+          orderNumber = data[0].numeroOrdem;
 
           document.getElementById('orderInfo').innerHTML = `
-            <h3>Ordem: ${orderNumber} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
+            <h3>Ordem: ${orderNumber}</h3>
+            <p>Cliente: ${data[0].cliente}</p>
+            <p>Nº do Pedido: ${data[0].pedido}</p>
+            <p>Responsável: ${resp}</p>
           `;
 
           const tbody = document.querySelector('#orderTable tbody');
@@ -116,19 +106,12 @@
           data.forEach(item => {
             const row = tbody.insertRow();
             row.innerHTML = `
-              <td>${item.produto}</td>
-              <td>${item.peca}</td>
-              <td>${item.tipo}</td>
-              <td>${item.comprimento}</td>
-              <td>${item.quantidade}</td>
+              <td>${item.produto}</td><td>${item.peca}</td><td>${item.tipo}</td>
+              <td>${item.comprimento}</td><td>${item.quantidade}</td><td>${item.descricao || ''}</td>
             `;
           });
 
           document.getElementById('orderTable').style.display = 'table';
-        })
-        .catch(error => {
-          console.error('Erro ao buscar dados da ordem:', error);
-          alert('Erro ao buscar dados da ordem.');
         });
     }
 
@@ -138,95 +121,70 @@
       fetch(SCRIPT_URL, {
         method: 'POST',
         body: JSON.stringify(orderData),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       })
       .then(response => response.text())
       .then(message => {
         document.getElementById('message').innerText = message;
-      })
-      .catch(error => {
-        console.error('Erro ao salvar:', error);
-        alert('Erro ao salvar a ordem.');
       });
     }
 
-   function generatePDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
 
-  const title = document.getElementById('orderInfo').innerText;
-  doc.setFontSize(14);
-  doc.text(title, 14, 20);
+      const cliente = orderData[0].cliente;
+      const pedido = orderData[0].pedido;
+      const responsavel = orderData[0].responsavel;
 
-  const grouped = {};
-  let totalPecas = 0;
-  let produtoContador = {};
+      doc.setFontSize(12);
+      doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
+      doc.text(`Cliente: ${cliente}`, 14, y + 8);
+      doc.text(`Nº do Pedido: ${pedido}`, 14, y + 16);
 
-  orderData.forEach(item => {
-    const key = `${item.produto}`;
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(item);
-    totalPecas += Number(item.quantidade);
+      const totalProdutos = new Set(orderData.map(d => d.produto)).size;
+      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
 
-    // Contagem de quantas vezes o produto apareceu (mesmo nome)
-    if (!produtoContador[key]) produtoContador[key] = 1;
-    else produtoContador[key]++;
-  });
+      doc.text(`Total de Produtos: ${totalProdutos}`, 14, y + 26);
+      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 34);
 
-  let totalProdutos = 0;
-  for (let key in produtoContador) {
-    totalProdutos += produtoContador[key];
-  }
-
-  let y = 30;
-  for (let produto in grouped) {
-    doc.setFontSize(12);
-    doc.text(`🔧 Produto: ${produto}`, 14, y);
-    y += 8;
-
-    const headers = ["Peça", "Tipo", "Comprimento", "Quantidade"];
-    const colWidths = [50, 40, 40, 30];
-    const startX = 14;
-
-    headers.forEach((header, i) => {
-      doc.setFillColor(200, 200, 200);
-      doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), y, colWidths[i], 10, 'F');
-      doc.setTextColor(0);
-      doc.text(header, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0) + 2, y + 7);
-    });
-    y += 10;
-
-    grouped[produto].forEach(item => {
-      const linha = [item.peca, item.tipo, String(item.comprimento), String(item.quantidade)];
-      linha.forEach((cell, i) => {
-        const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-        doc.rect(x, y, colWidths[i], 10);
-        doc.text(cell, x + 2, y + 7);
+      const subtotais = {};
+      orderData.forEach(item => {
+        const produto = item.produto;
+        subtotais[produto] = (subtotais[produto] || 0) + Number(item.quantidade || 0);
       });
-      y += 10;
-    });
 
-    y += 5;
-  }
+      let subY = y + 44;
+      doc.text('Subtotais por Produto:', 14, subY);
+      Object.entries(subtotais).forEach(([produto, quantidade]) => {
+        subY += 8;
+        doc.text(`- ${produto}: ${quantidade} peças`, 18, subY);
+      });
 
-  y += 10;
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`📦 Total de Produtos: ${totalProdutos}`, 14, y);
-  y += 8;
-  doc.text(`🔩 Total de Peças: ${totalPecas}`, 14, y);
+      y = subY + 12;
 
-  y += 20;
-  doc.text("____________________________", 20, y);
-  doc.text("____________________________", 120, y);
-  doc.text("Responsável pela Produção", 25, y + 8);
-  doc.text("Conferido por", 140, y + 8);
+      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
+      const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
 
-  doc.save("Ordem_de_Producao.pdf");
-}
+      headers.concat(rows).forEach((r) => {
+        let x = 14;
+        r.forEach((cell) => {
+          doc.rect(x, y, 30, 10);
+          doc.text(String(cell), x + 1, y + 7);
+          x += 30;
+        });
+        y += 10;
+      });
 
+      y += 20;
+      doc.text("__________________________", 20, y);
+      doc.text("__________________________", 120, y);
+      doc.text("Resp. Produção", 25, y + 8);
+      doc.text("Conferido por", 135, y + 8);
+
+      doc.save(`Ordem_${orderNumber}.pdf`);
+    }
   </script>
 </body>
 </html>
