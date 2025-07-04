@@ -55,7 +55,7 @@
       const ordem = document.getElementById("ordemInput").value.trim();
       if (!ordem) return alert("Digite o número da ordem de produção.");
 
-      const url = 'https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec?ordem=' + ordem;
+      const url = 'https://script.google.com/macros/s/AKfycbzuG20OPt5pOpU7I0GNuSvElPE6RLzdwBA9St6dqmofaL5VGnIkIGlXhX5qKaB7aOcS/exec' + ordem;
       const response = await fetch(url);
       const dados = await response.json();
 
