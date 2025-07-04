@@ -138,67 +138,53 @@
     async function generatePDF() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-
       const logo = new Image();
-      logo.src = 'logotipo.png';
-      await new Promise(resolve => { logo.onload = resolve });
+      logo.src = 'logo.jpg';
 
-      doc.addImage(logo, 'JPEG', 80, 10, 50, 20); // Centralizado no topo
+      logo.onload = function () {
+        doc.addImage(logo, 'JPEG', 80, 10, 50, 20);
 
-      const dataHoje = new Date().toLocaleDateString();
-      const orc = document.getElementById('orcamento').value.trim();
-      const resp = document.getElementById('responsavel').value.trim();
-      const cliente = orderData[0]?.cliente || '';
-      const ordem = orderNumber;
-
-      let totalPecas = 0;
-      let produtosUnicos = new Set();
-      orderData.forEach(item => {
-        produtosUnicos.add(item.produto);
-        totalPecas += Number(item.quantidade);
-      });
-      const totalProdutos = produtosUnicos.size;
-
-      let y = 40;
-      doc.setFontSize(12);
-      doc.text(`📄 Ordem de Produção: ${ordem}`, 14, y); y += 8;
-      doc.text(`📦 Pedido (Orçamento): ${orc}`, 14, y); y += 8;
-      doc.text(`👤 Cliente: ${cliente}`, 14, y); y += 8;
-      doc.text(`👷 Responsável: ${resp}`, 14, y); y += 8;
-      doc.text(`📅 Data: ${dataHoje}`, 14, y); y += 8;
-      doc.text(`🔢 Total de Produtos: ${totalProdutos}`, 14, y); y += 8;
-      doc.text(`🔩 Total de Peças: ${totalPecas}`, 14, y); y += 12;
-
-      const headers = ["Produto", "Peça", "Tipo", "Comprimento", "Quantidade"];
-      const colWidths = [40, 40, 30, 40, 30];
-      const startX = 14;
-
-      headers.forEach((header, i) => {
-        const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-        doc.setFillColor(200, 200, 200);
-        doc.rect(x, y, colWidths[i], 10, 'F');
-        doc.setTextColor(0);
-        doc.text(header, x + 2, y + 7);
-      });
-      y += 10;
-
-      orderData.forEach(item => {
-        const row = [item.produto, item.peca, item.tipo, String(item.comprimento), String(item.quantidade)];
-        row.forEach((cell, i) => {
-          const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-          doc.rect(x, y, colWidths[i], 10);
-          doc.text(String(cell), x + 2, y + 7);
-        });
+        let y = 35;
+        doc.setFontSize(12);
+        doc.text(document.getElementById('orderInfo').innerText, 14, y);
         y += 10;
-      });
+        doc.text(document.getElementById('summary').innerText, 14, y);
+        y += 10;
 
-      y += 20;
-      doc.text("____________________________", 20, y);
-      doc.text("____________________________", 120, y);
-      doc.text("Responsável pela Produção", 25, y + 8);
-      doc.text("Conferido por", 140, y + 8);
+        const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
+        const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
 
-      doc.save("Ordem_de_Producao.pdf");
+        headers.concat(rows).forEach(row => {
+          let x = 14;
+          row.forEach(cell => {
+            doc.rect(x, y, 30, 10);
+            doc.text(String(cell), x + 2, y + 7);
+            x += 30;
+          });
+          y += 10;
+        });
+
+        y += 20;
+        doc.text("__________________________", 30, y);
+        doc.text("__________________________", 130, y);
+        doc.text("Responsável pela Produção", 35, y + 8);
+        doc.text("Conferido por", 140, y + 8);
+
+        doc.save("Ordem_de_Producao.pdf");
+      };
+    }
+
+    function resetForm() {
+      orderData = [];
+      orderNumber = '';
+      pedidoNumber = '';
+      document.getElementById('orcamento').value = '';
+      document.getElementById('responsavel').value = '';
+      document.getElementById('orderInfo').innerHTML = '';
+      document.getElementById('summary').innerHTML = '';
+      document.querySelector('#orderTable tbody').innerHTML = '';
+      document.getElementById('orderTable').style.display = 'none';
+      document.getElementById('mensagem').innerText = '';
     }
   </script>
 </body>
