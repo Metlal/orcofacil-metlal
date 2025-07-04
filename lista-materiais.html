@@ -89,7 +89,11 @@
     <div id="mensagem" class="mensagem"></div>
   </div>
 
+  <!-- ✅ Importação do jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <script>
+    const { jsPDF } = window.jspdf;
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
     let listaDeMateriais = [];
 
@@ -137,7 +141,7 @@
       data.forEach(item => {
         const codigo = item.peca;
         const comprimento = parseFloat(item.comprimento);
-        const barra = parseFloat(item.tamanhoBarra || 600); // default 6m
+        const barra = parseFloat(item.tamanhoBarra || 600);
         const qtd = parseFloat(item.qtdTotal);
         const pecasPorBarra = Math.floor(barra / comprimento);
         const barras = Math.ceil(qtd / pecasPorBarra);
@@ -211,7 +215,6 @@
     }
 
     function gerarPDF() {
-      const { jsPDF } = window.jspdf;
       const pdf = new jsPDF();
       const titulo = document.getElementById("tituloLista").innerText;
       const rows = [...document.querySelectorAll("table tr")].map(tr =>
