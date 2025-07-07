@@ -136,55 +136,67 @@
     }
 
     function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
-      let y = 20;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape' });
+  let y = 20;
 
-      const info = orderData[0];
-      doc.setFontSize(12);
-      doc.text(`Ordem de Produção: ${info.numeroOrdem}`, 14, y);
-      doc.text(`Cliente: ${info.cliente}`, 14, y + 8);
-      doc.text(`Nº do Pedido: ${document.getElementById('orcamento').value.trim()}`, 14, y + 16);
-      doc.text(`Responsável: ${info.responsavel}`, 14, y + 24);
-      doc.text(`Total de Peças: ${orderData.reduce((sum, d) => sum + Number(d.quantidade), 0)}`, 14, y + 32);
+  const cliente = orderData[0].cliente;
+  const pedido = orderData[0].pedido;
+  const responsavel = document.getElementById("responsavel").value;
+  const ordem = orderData[0].numeroOrdem;
 
-      const subtotais = {};
-      orderData.forEach(item => {
-        if (!subtotais[item.produto]) subtotais[item.produto] = item.qtdProduto || 0;
-      });
+  doc.setFontSize(12);
+  doc.text(`Ordem de Produção: ${ordem}`, 14, y);
+  doc.text(`Cliente: ${cliente}`, 14, y + 8);
+  doc.text(`Nº do Pedido: ${pedido}`, 14, y + 16);
+  doc.text(`Responsável: ${responsavel}`, 14, y + 24);
 
-      let subY = y + 40;
-      doc.text('Subtotais por Produto:', 14, subY);
-      Object.entries(subtotais).forEach(([produto, qtd]) => {
-        subY += 8;
-        doc.text(`- ${produto}: ${qtd} unidade(s)`, 18, subY);
-      });
+  const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+  doc.text(`Total de Peças: ${totalPecas}`, 14, y + 32);
 
-      y = subY + 12;
+  // 🔁 Subtotais de produtos com soma de unidades vendidas
+  const produtosVendidos = {};
+  const pedidoAtual = pedido;
 
-      const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-      const rows = orderData.map(d => [
-        d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || ''
-      ]);
-
-      headers.concat(rows).forEach((r, i) => {
-        let x = 14;
-        r.forEach((cell, j) => {
-          doc.rect(x, y, 40, 10);
-          doc.text(String(cell), x + 1, y + 7);
-          x += 40;
-        });
-        y += 10;
-      });
-
-      y += 20;
-      doc.text("__________________________", 30, y);
-      doc.text("__________________________", 180, y);
-      doc.text("Resp. Produção", 40, y + 8);
-      doc.text("Conferido por", 190, y + 8);
-
-      doc.save(`Ordem_${info.numeroOrdem}.pdf`);
+  // Reagrupa por produto somando quantidade de unidades vendidas
+  orderData.forEach(item => {
+    const produto = item.produto;
+    if (!produtosVendidos[produto]) {
+      produtosVendidos[produto] = 0;
     }
+    produtosVendidos[produto] += 1; // ou item.qtdProduto, se tiver
+  });
+
+  let subY = y + 42;
+  doc.text('Subtotal de Produtos:', 14, subY);
+  Object.entries(produtosVendidos).forEach(([produto, qtd]) => {
+    subY += 8;
+    doc.text(`- ${produto}: ${qtd} unidade(s)`, 18, subY);
+  });
+
+  y = subY + 10;
+
+  const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
+  const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
+
+  headers.concat(rows).forEach((r, i) => {
+    let x = 14;
+    r.forEach((cell, j) => {
+      doc.rect(x, y, 45, 10);
+      doc.text(String(cell), x + 1, y + 7);
+      x += 45;
+    });
+    y += 10;
+  });
+
+  y += 20;
+  doc.text("__________________________", 30, y);
+  doc.text("__________________________", 180, y);
+  doc.text("Resp. Produção", 40, y + 8);
+  doc.text("Conferido por", 190, y + 8);
+
+  doc.save(`Ordem_${ordem}.pdf`);
+}
 
     function resetForm() {
       orderData = [];
