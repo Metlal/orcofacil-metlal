@@ -148,7 +148,7 @@
   doc.setFontSize(12);
 doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
 doc.text(`Cliente: ${orderData[0].cliente}`, 14, y + 8);
-doc.text(`Nº do Pedido: ${numeroPedido}`, 14, y + 16);
+doc.text(`Nº do Pedido: ${document.getElementById('orcamento').value.trim()}`, 14, y + 16);
 doc.text(`Responsável: ${responsavel}`, 14, y + 24);
 
   const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
