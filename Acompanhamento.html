@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>📋 Acompanhamento de Produção</title>
+  <title>Acompanhamento de Produção</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline"></script>
   <style>
@@ -38,16 +38,16 @@
   <canvas id="ganttChart" width="1000" height="600"></canvas>
 
   <script>
-    const url = "https://script.google.com/macros/s/AKfycbzuG20OPt5pOpU7I0GNuSvElPE6RLzdwBA9St6dqmofaL5VGnIkIGlXhX5qKaB7aOcS/exec";
+    const url = "https://script.google.com/macros/s/AKfycbxEQFM5OpFWmP4J3B07_Gi4SCXyEMiasrSztu1dkiD7CyNf16kQrIVcIN7JJy7YPZkB/exec";
 
     async function carregarDados() {
       try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const response = await fetch(url);
+        const dados = await response.json();
 
         const tarefas = [];
 
-        data.forEach(item => {
+        dados.forEach(item => {
           if (item.inicioProducao && item.fimProducao) {
             tarefas.push({
               x: `${item.orcamento} - ${item.produto} (Produção)`,
@@ -121,7 +121,6 @@
       });
     }
 
-    // Carregar ao abrir
     carregarDados();
   </script>
 </body>
