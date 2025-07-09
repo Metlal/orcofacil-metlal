@@ -38,40 +38,38 @@
   <canvas id="ganttChart" width="1000" height="600"></canvas>
 
   <script>
-    const sheetId = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
-const aba = "Acompanhamentos";
-const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${aba}`;
+    const url = 'https://script.google.com/macros/s/AKfycbxEQFM5OpFWmP4J3B07_Gi4SCXyEMiasrSztu1dkiD7CyNf16kQrIVcIN7JJy7YPZkB/exec';
 
     async function carregarAcompanhamentos() {
       try {
         const res = await fetch(url);
-        const text = await res.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
+        const dados = await res.json();
 
         const tarefas = [];
 
-        rows.forEach(row => {
-          const atividade = row.c[1]?.v; // Produto
-          const responsavel = row.c[7]?.v; // Responsável
-          const inicio = row.c[3]?.f || row.c[3]?.v; // Início Produção
-          const fim = row.c[4]?.f || row.c[4]?.v; // Fim Produção
-          const status = row.c[2]?.v; // Status
-
-          if (atividade && inicio && fim) {
+        dados.forEach(item => {
+          if (item.inicioProducao && item.fimProducao) {
             tarefas.push({
-              x: `${atividade} (${responsavel || "sem resp."})`,
-              y: [new Date(inicio), new Date(fim)],
-              backgroundColor: status === "Concluído" ? "#28a745" :
-                              status === "Em Produção" ? "#ffc107" :
+              x: `Produção - ${item.produto} (${item.responsavel || "sem resp."})`,
+              y: [new Date(item.inicioProducao), new Date(item.fimProducao)],
+              backgroundColor: item.status === "Concluído" ? "#28a745" :
+                              item.status === "Em Produção" ? "#ffc107" :
                               "#dc3545"
+            });
+          }
+
+          if (item.inicioInstalacao && item.fimInstalacao) {
+            tarefas.push({
+              x: `Instalação - ${item.produto} (${item.responsavel || "sem resp."})`,
+              y: [new Date(item.inicioInstalacao), new Date(item.fimInstalacao)],
+              backgroundColor: "#17a2b8"
             });
           }
         });
 
         renderizarGrafico(tarefas);
-      } catch (e) {
-        alert("Erro ao carregar os dados da planilha. Verifique o ID e nome da aba.");
+      } catch (error) {
+        alert("Erro ao carregar os dados da planilha.\n\nVerifique:\n✔️ O link do script\n✔️ Se está publicado como 'Qualquer pessoa'\n\nDetalhes: " + error.message);
       }
     }
 
@@ -83,7 +81,7 @@ const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${a
         type: 'timeline',
         data: {
           datasets: [{
-            label: 'Cronograma',
+            label: 'Cronograma de Produção e Instalação',
             data: tarefas
           }]
         },
@@ -102,20 +100,18 @@ const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${a
             y: {
               title: {
                 display: true,
-                text: 'Atividades'
+                text: 'Tarefas'
               }
             }
           },
           plugins: {
-            legend: {
-              display: false
-            },
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 label: ctx => {
-                  const inicio = ctx.raw.y[0].toLocaleDateString();
-                  const fim = ctx.raw.y[1].toLocaleDateString();
-                  return `${ctx.raw.x}: ${inicio} a ${fim}`;
+                  const ini = new Date(ctx.raw.y[0]).toLocaleDateString();
+                  const fim = new Date(ctx.raw.y[1]).toLocaleDateString();
+                  return `${ctx.raw.x}: ${ini} a ${fim}`;
                 }
               }
             }
