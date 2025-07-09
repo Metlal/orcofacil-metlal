@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Acompanhamento de Produção</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    #btnAtualizar {
+      background: #007bff;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    canvas {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📊 Acompanhamento de Produção</h1>
+  <button id="btnAtualizar" onclick="carregarAcompanhamentos()">🔄 Atualizar Cronograma</button>
+  <canvas id="ganttChart" width="1000" height="600"></canvas>
+
+  <script>
+    const sheetId = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
+    const aba = "Acompanhementos"; // confirme que está com esse nome
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${aba}`;
+
+    async function carregarAcompanhamentos() {
+      const res = await fetch(url);
+      const text = await res.text();
+      const json = JSON.parse(text.substr(47).slice(0, -2));
+      const rows = json.table.rows;
+
+      const tarefas = [];
+
+      rows.forEach(row => {
+        const atividade = row.c[0]?.v;
+        const responsavel = row.c[1]?.v;
+        const inicio = row.c[2]?.f || row.c[2]?.v;
+        const fim = row.c[3]?.f || row.c[3]?.v;
+        const status = row.c[4]?.v;
+
+        if (atividade && inicio && fim) {
+          tarefas.push({
+            x: `${atividade} (${responsavel || "sem resp."})`,
+            y: [new Date(inicio), new Date(fim)],
+            backgroundColor: status === "Concluído" ? "#28a745" :
+                            status === "Em Andamento" ? "#ffc107" :
+                            "#dc3545"
+          });
+        }
+      });
+
+      renderizarGrafico(tarefas);
+    }
+
+    function renderizarGrafico(tarefas) {
+      const ctx = document.getElementById("ganttChart").getContext("2d");
+      if (window.ganttChartInstance) window.ganttChartInstance.destroy();
+
+      window.ganttChartInstance = new Chart(ctx, {
+        type: 'timeline',
+        data: {
+          datasets: [{
+            label: 'Cronograma',
+            data: tarefas
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'day'
+              },
+              title: {
+                display: true,
+                text: 'Data'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Atividades'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const inicio = ctx.raw.y[0].toLocaleDateString();
+                  const fim = ctx.raw.y[1].toLocaleDateString();
+                  return `${ctx.raw.x}: ${inicio} a ${fim}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Carrega ao abrir
+    carregarAcompanhamentos();
+  </script>
+</body>
+</html>
