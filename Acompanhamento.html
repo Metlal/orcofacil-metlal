@@ -39,41 +39,32 @@
 
   <script>
     const sheetId = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
-    const aba = "Acompanhamentos"; // já corrigido!
+    const aba = "Acompanhamentos"; // Corrigido aqui
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${aba}`;
 
     async function carregarAcompanhamentos() {
       try {
         const res = await fetch(url);
         const text = await res.text();
-        const json = JSON.parse(text.substring(47).slice(0, -2));
+        const json = JSON.parse(text.substr(47).slice(0, -2));
         const rows = json.table.rows;
 
         const tarefas = [];
 
         rows.forEach(row => {
-          const orcamento = row.c[0]?.v;
-          const produto = row.c[1]?.v;
-          const status = row.c[2]?.v || "";
-          const inicioProducao = row.c[3]?.f || row.c[3]?.v;
-          const fimProducao = row.c[4]?.f || row.c[4]?.v;
-          const inicioInstalacao = row.c[5]?.f || row.c[5]?.v;
-          const fimInstalacao = row.c[6]?.f || row.c[6]?.v;
-          const responsavel = row.c[7]?.v || "sem resp.";
+          const atividade = row.c[1]?.v; // Produto
+          const responsavel = row.c[7]?.v; // Responsável
+          const inicio = row.c[3]?.f || row.c[3]?.v; // Início Produção
+          const fim = row.c[4]?.f || row.c[4]?.v; // Fim Produção
+          const status = row.c[2]?.v; // Status
 
-          if (inicioProducao && fimProducao) {
+          if (atividade && inicio && fim) {
             tarefas.push({
-              x: `Produção (${produto}) - ${orcamento}`,
-              y: [new Date(inicioProducao), new Date(fimProducao)],
-              backgroundColor: "#007bff"
-            });
-          }
-
-          if (inicioInstalacao && fimInstalacao) {
-            tarefas.push({
-              x: `Instalação (${produto}) - ${orcamento}`,
-              y: [new Date(inicioInstalacao), new Date(fimInstalacao)],
-              backgroundColor: "#28a745"
+              x: `${atividade} (${responsavel || "sem resp."})`,
+              y: [new Date(inicio), new Date(fim)],
+              backgroundColor: status === "Concluído" ? "#28a745" :
+                              status === "Em Produção" ? "#ffc107" :
+                              "#dc3545"
             });
           }
         });
@@ -81,7 +72,6 @@
         renderizarGrafico(tarefas);
       } catch (e) {
         alert("Erro ao carregar os dados da planilha. Verifique o ID e nome da aba.");
-        console.error(e);
       }
     }
 
@@ -93,7 +83,7 @@
         type: 'timeline',
         data: {
           datasets: [{
-            label: 'Etapas de Produção e Instalação',
+            label: 'Cronograma',
             data: tarefas
           }]
         },
@@ -101,21 +91,31 @@
           scales: {
             x: {
               type: 'time',
-              time: { unit: 'day' },
-              title: { display: true, text: 'Data' }
+              time: {
+                unit: 'day'
+              },
+              title: {
+                display: true,
+                text: 'Data'
+              }
             },
             y: {
-              title: { display: true, text: 'Etapas' }
+              title: {
+                display: true,
+                text: 'Atividades'
+              }
             }
           },
           plugins: {
-            legend: { display: false },
+            legend: {
+              display: false
+            },
             tooltip: {
               callbacks: {
                 label: ctx => {
-                  const inicio = new Date(ctx.raw.y[0]).toLocaleDateString();
-                  const fim = new Date(ctx.raw.y[1]).toLocaleDateString();
-                  return `${ctx.raw.x}: de ${inicio} até ${fim}`;
+                  const inicio = ctx.raw.y[0].toLocaleDateString();
+                  const fim = ctx.raw.y[1].toLocaleDateString();
+                  return `${ctx.raw.x}: ${inicio} a ${fim}`;
                 }
               }
             }
@@ -124,6 +124,7 @@
       });
     }
 
+    // Carrega ao abrir
     carregarAcompanhamentos();
   </script>
 </body>
