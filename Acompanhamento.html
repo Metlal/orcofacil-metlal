@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Acompanhamento de Produção</title>
+  <title>📋 Acompanhamento de Produção</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-timeline"></script>
   <style>
@@ -34,23 +34,23 @@
 <body>
 
   <h1>📊 Acompanhamento de Produção</h1>
-  <button id="btnAtualizar" onclick="carregarAcompanhamentos()">🔄 Atualizar Cronograma</button>
+  <button id="btnAtualizar" onclick="carregarDados()">🔄 Atualizar Cronograma</button>
   <canvas id="ganttChart" width="1000" height="600"></canvas>
 
   <script>
-    const url = 'https://script.google.com/macros/s/AKfycbxEQFM5OpFWmP4J3B07_Gi4SCXyEMiasrSztu1dkiD7CyNf16kQrIVcIN7JJy7YPZkB/exec';
+    const url = "https://script.google.com/macros/s/AKfycbxEQFM5OpFWmP4J3B07_Gi4SCXyEMiasrSztu1dkiD7CyNf16kQrIVcIN7JJy7YPZkB/exec";
 
-    async function carregarAcompanhamentos() {
+    async function carregarDados() {
       try {
         const res = await fetch(url);
-        const dados = await res.json();
+        const data = await res.json();
 
         const tarefas = [];
 
-        dados.forEach(item => {
+        data.forEach(item => {
           if (item.inicioProducao && item.fimProducao) {
             tarefas.push({
-              x: `Produção - ${item.produto} (${item.responsavel || "sem resp."})`,
+              x: `${item.orcamento} - ${item.produto} (Produção)`,
               y: [new Date(item.inicioProducao), new Date(item.fimProducao)],
               backgroundColor: item.status === "Concluído" ? "#28a745" :
                               item.status === "Em Produção" ? "#ffc107" :
@@ -60,7 +60,7 @@
 
           if (item.inicioInstalacao && item.fimInstalacao) {
             tarefas.push({
-              x: `Instalação - ${item.produto} (${item.responsavel || "sem resp."})`,
+              x: `${item.orcamento} - ${item.produto} (Instalação)`,
               y: [new Date(item.inicioInstalacao), new Date(item.fimInstalacao)],
               backgroundColor: "#17a2b8"
             });
@@ -68,8 +68,9 @@
         });
 
         renderizarGrafico(tarefas);
-      } catch (error) {
-        alert("Erro ao carregar os dados da planilha.\n\nVerifique:\n✔️ O link do script\n✔️ Se está publicado como 'Qualquer pessoa'\n\nDetalhes: " + error.message);
+      } catch (e) {
+        alert("Erro ao carregar os dados da planilha.");
+        console.error(e);
       }
     }
 
@@ -81,7 +82,7 @@
         type: 'timeline',
         data: {
           datasets: [{
-            label: 'Cronograma de Produção e Instalação',
+            label: 'Acompanhamento de Produção',
             data: tarefas
           }]
         },
@@ -100,7 +101,7 @@
             y: {
               title: {
                 display: true,
-                text: 'Tarefas'
+                text: 'Etapas'
               }
             }
           },
@@ -109,9 +110,9 @@
             tooltip: {
               callbacks: {
                 label: ctx => {
-                  const ini = new Date(ctx.raw.y[0]).toLocaleDateString();
-                  const fim = new Date(ctx.raw.y[1]).toLocaleDateString();
-                  return `${ctx.raw.x}: ${ini} a ${fim}`;
+                  const inicio = ctx.raw.y[0].toLocaleDateString();
+                  const fim = ctx.raw.y[1].toLocaleDateString();
+                  return `${ctx.raw.x}: ${inicio} a ${fim}`;
                 }
               }
             }
@@ -120,8 +121,8 @@
       });
     }
 
-    // Carrega ao abrir
-    carregarAcompanhamentos();
+    // Carregar ao abrir
+    carregarDados();
   </script>
 </body>
 </html>
