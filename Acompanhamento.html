@@ -39,36 +39,45 @@
 
   <script>
     const sheetId = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
-    const aba = "Acompanhementos"; // confirme que está com esse nome
+    const aba = "Acompanhementos"; // Verifique se o nome está 100% igual na planilha
     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${aba}`;
 
     async function carregarAcompanhamentos() {
-      const res = await fetch(url);
-      const text = await res.text();
-      const json = JSON.parse(text.substr(47).slice(0, -2));
-      const rows = json.table.rows;
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        const json = JSON.parse(text.substring(47).slice(0, -2));
+        const rows = json.table.rows;
 
-      const tarefas = [];
+        const tarefas = [];
 
-      rows.forEach(row => {
-        const atividade = row.c[0]?.v;
-        const responsavel = row.c[1]?.v;
-        const inicio = row.c[2]?.f || row.c[2]?.v;
-        const fim = row.c[3]?.f || row.c[3]?.v;
-        const status = row.c[4]?.v;
+        rows.forEach(row => {
+          const atividade = row.c[0]?.v;
+          const responsavel = row.c[1]?.v || "sem resp.";
+          const inicioStr = row.c[2]?.f || row.c[2]?.v;
+          const fimStr = row.c[3]?.f || row.c[3]?.v;
+          const status = row.c[4]?.v || "Pendente";
 
-        if (atividade && inicio && fim) {
-          tarefas.push({
-            x: `${atividade} (${responsavel || "sem resp."})`,
-            y: [new Date(inicio), new Date(fim)],
-            backgroundColor: status === "Concluído" ? "#28a745" :
-                            status === "Em Andamento" ? "#ffc107" :
-                            "#dc3545"
-          });
-        }
-      });
+          const inicio = new Date(inicioStr);
+          const fim = new Date(fimStr);
 
-      renderizarGrafico(tarefas);
+          if (atividade && !isNaN(inicio) && !isNaN(fim)) {
+            tarefas.push({
+              x: `${atividade} (${responsavel})`,
+              y: [inicio, fim],
+              backgroundColor:
+                status === "Concluído" ? "#28a745" :
+                status === "Em Andamento" ? "#ffc107" :
+                "#dc3545"
+            });
+          }
+        });
+
+        renderizarGrafico(tarefas);
+      } catch (erro) {
+        alert("Erro ao carregar dados da planilha. Verifique a aba e o ID.");
+        console.error(erro);
+      }
     }
 
     function renderizarGrafico(tarefas) {
@@ -79,7 +88,7 @@
         type: 'timeline',
         data: {
           datasets: [{
-            label: 'Cronograma',
+            label: 'Cronograma de Produção',
             data: tarefas
           }]
         },
@@ -109,9 +118,9 @@
             tooltip: {
               callbacks: {
                 label: ctx => {
-                  const inicio = ctx.raw.y[0].toLocaleDateString();
-                  const fim = ctx.raw.y[1].toLocaleDateString();
-                  return `${ctx.raw.x}: ${inicio} a ${fim}`;
+                  const inicio = new Date(ctx.raw.y[0]).toLocaleDateString();
+                  const fim = new Date(ctx.raw.y[1]).toLocaleDateString();
+                  return `${ctx.raw.x}\nDe: ${inicio} até ${fim}`;
                 }
               }
             }
@@ -120,7 +129,7 @@
       });
     }
 
-    // Carrega ao abrir
+    // Carrega automaticamente ao abrir
     carregarAcompanhamentos();
   </script>
 </body>
