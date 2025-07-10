@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro de Ponto com Face ID</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 30px;
+      background-color: #f5f5f5;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+    }
+    video, canvas {
+      border: 1px solid #ccc;
+      margin: 10px 0;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h2>Registro de Ponto com Face ID</h2>
+
+  <input type="text" id="nome" placeholder="Digite seu nome" required><br><br>
+
+  <video id="video" width="320" height="240" autoplay></video><br>
+  <button onclick="tirarFoto()">📸 Tirar Foto</button><br><br>
+
+  <canvas id="canvas" width="320" height="240" style="display:none;"></canvas><br>
+
+  <button onclick="registrar('Entrada')">✅ Registrar Entrada</button>
+  <button onclick="registrar('Saída')">🚪 Registrar Saída</button>
+
+  <p id="status"></p>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+
+    // Ativar a câmera
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => alert('Erro ao acessar a câmera: ' + err));
+
+    function tirarFoto() {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.style.display = 'block';
+    }
+
+    function registrar(tipo) {
+      const nome = document.getElementById('nome').value.trim();
+      if (!nome) return alert('Digite seu nome antes de registrar.');
+
+      const imagemBase64 = canvas.toDataURL('image/png');
+
+      fetch('https://script.google.com/macros/s/AKfycbywctKiViuahNmkMz9KCNKiUnoyQcbblbAYxGKXL-Wnp_c9svI05rCAgeyYmwUr8b75UA/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: nome,
+          tipo: tipo,
+          foto: imagemBase64
+        })
+      })
+      .then(res => res.text())
+      .then(msg => {
+        document.getElementById('status').innerText = msg;
+        document.getElementById('status').style.color = msg.includes('✅') ? 'green' : 'red';
+      })
+      .catch(err => {
+        document.getElementById('status').innerText = '❌ Erro ao registrar: ' + err;
+        document.getElementById('status').style.color = 'red';
+      });
+    }
+  </script>
+</body>
+</html>
