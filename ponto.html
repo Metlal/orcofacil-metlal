@@ -4,35 +4,19 @@
   <meta charset="UTF-8">
   <title>Registro de Ponto com Face ID</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 30px;
-      background-color: #f5f5f5;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-      margin: 5px;
-    }
-    video, canvas {
-      border: 1px solid #ccc;
-      margin: 10px 0;
-    }
-    #status {
-      margin-top: 15px;
-      font-weight: bold;
-      color: green;
-    }
+    body { font-family: Arial; text-align: center; margin-top: 30px; background: #f2f2f2; }
+    input, button { padding: 10px; margin: 5px; font-size: 16px; }
+    video, canvas { border: 1px solid #ccc; margin: 10px 0; }
+    #status { font-weight: bold; margin-top: 15px; }
   </style>
 </head>
 <body>
   <h2>Registro de Ponto com Face ID</h2>
 
-  <input type="text" id="nome" placeholder="Digite seu nome" required><br><br>
+  <input type="text" id="nome" placeholder="Digite seu nome completo" required><br>
 
   <video id="video" width="320" height="240" autoplay></video><br>
-  <button onclick="tirarFoto()">📸 Tirar Foto</button><br><br>
+  <button onclick="tirarFoto()">📸 Tirar Foto</button><br>
 
   <canvas id="canvas" width="320" height="240" style="display:none;"></canvas><br>
 
@@ -46,12 +30,9 @@
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
 
-    // Ativar a câmera
     navigator.mediaDevices.getUserMedia({ video: true })
-      .then(stream => {
-        video.srcObject = stream;
-      })
-      .catch(err => alert('Erro ao acessar a câmera: ' + err));
+      .then(stream => { video.srcObject = stream; })
+      .catch(err => alert("Erro ao acessar a câmera: " + err));
 
     function tirarFoto() {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -60,27 +41,23 @@
 
     function registrar(tipo) {
       const nome = document.getElementById('nome').value.trim();
-      if (!nome) return alert('Digite seu nome antes de registrar.');
+      if (!nome) return alert("Digite seu nome!");
 
-      const imagemBase64 = canvas.toDataURL('image/png');
+      const imagem = canvas.toDataURL('image/png');
 
-      fetch('https://script.google.com/macros/s/AKfycbywctKiViuahNmkMz9KCNKiUnoyQcbblbAYxGKXL-Wnp_c9svI05rCAgeyYmwUr8b75UA/exec', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nome: nome,
-          tipo: tipo,
-          foto: imagemBase64
-        })
+      fetch("https://script.google.com/macros/s/AKfycbywctKiViuahNmkMz9KCNKiUnoyQcbblbAYxGKXL-Wnp_c9svI05rCAgeyYmwUr8b75UA/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: nome, tipo: tipo, foto: imagem })
       })
-      .then(res => res.text())
-      .then(msg => {
-        document.getElementById('status').innerText = msg;
-        document.getElementById('status').style.color = msg.includes('✅') ? 'green' : 'red';
+      .then(response => response.text())
+      .then(texto => {
+        document.getElementById("status").innerText = texto;
+        document.getElementById("status").style.color = texto.includes("✅") ? "green" : "red";
       })
-      .catch(err => {
-        document.getElementById('status').innerText = '❌ Erro ao registrar: ' + err;
-        document.getElementById('status').style.color = 'red';
+      .catch(error => {
+        document.getElementById("status").innerText = "❌ Erro ao registrar: " + error;
+        document.getElementById("status").style.color = "red";
       });
     }
   </script>
