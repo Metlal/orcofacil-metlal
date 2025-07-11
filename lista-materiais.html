@@ -2,254 +2,154 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liberação de Materiais</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📦 Liberação de Materiais</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Inter', sans-serif;
+      background: #f1f5f9;
+      padding: 0;
       margin: 0;
-      padding: 40px;
-      background: url('inicial.jpg') no-repeat center center fixed;
-      background-size: cover;
     }
-    .container {
-      background: rgba(255, 255, 255, 0.95);
+    header {
+      background: #004080;
+      color: #fff;
       padding: 20px;
-      border-radius: 10px;
-      max-width: 1000px;
-      margin: auto;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #999;
-      padding: 8px;
       text-align: center;
     }
-    th {
-      background-color: #333;
-      color: white;
+    .container {
+      max-width: 800px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #ccc;
     }
-    .botao {
-      margin-top: 15px;
-      padding: 10px 15px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    .botao:hover {
-      background-color: #388e3c;
-    }
-    .mensagem {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input {
+    input, button {
+      width: 100%;
       padding: 10px;
-      font-size: 16px;
-      margin-bottom: 10px;
-      width: 250px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #0066cc;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #004080;
+    }
+    #resultado ul {
+      list-style: none;
+      padding: 0;
+    }
+    #resultado li {
+      padding: 6px 0;
     }
   </style>
 </head>
 <body>
+  <header>
+    <h1>📦 Liberação de Materiais</h1>
+  </header>
+
   <div class="container">
-    <h2>🔍 Consulta de Lista de Materiais</h2>
-    <input type="text" id="numeroOrcamento" placeholder="Digite o número do orçamento" />
-    <button class="botao" onclick="gerarLista()">Gerar Lista de Materiais</button>
+    <label>Número do Orçamento:</label>
+    <input id="numero" placeholder="Ex: MT0001" />
 
-    <div id="tituloLista"></div>
-
-    <table id="tabelaMateriais" style="display:none;">
-      <thead>
-        <tr>
-          <th>Produto</th>
-          <th>Peça</th>
-          <th>Tipo</th>
-          <th>Comprimento (cm)</th>
-          <th>Qtd Total</th>
-          <th>Plano de Corte</th>
-          <th>Barras</th>
-          <th>Aproveitamento</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div id="planoDeCorteAgrupado"></div>
-
-    <button class="botao" onclick="salvarNaPlanilha()">💾 Salvar na Planilha</button>
-    <button class="botao" onclick="gerarPDF()">🧾 Gerar PDF</button>
-
-    <div id="mensagem" class="mensagem"></div>
+    <button onclick="consultarOrcamento()">🔍 Consultar e Gerar Lista</button>
+    <div id="resultado"></div>
+    <button id="btnSalvar" style="display:none;" onclick="salvarLiberacao()">💾 Salvar na Planilha</button>
   </div>
 
-  <!-- ✅ Importação do jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   <script>
-    const { jsPDF } = window.jspdf;
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
-    let listaDeMateriais = [];
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQf_AyVZrus_Xs-ckOWeFJMdBEs-BFlPWyj1-Mn9fXG78MG7tCUoyeqLLYZD_5IeNA/exec";
+    const PLANILHA_ID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4";
 
-    function gerarLista() {
-      const numero = document.getElementById("numeroOrcamento").value.trim();
-      if (!numero) return alert("Digite o número do orçamento!");
+    const resultado = document.getElementById("resultado");
+    let listaDeMateriais = {};
 
-      fetch(`${SCRIPT_URL}?orcamento=${numero}`)
-        .then(res => res.json())
-        .then(data => {
-          listaDeMateriais = data;
-          preencherTabela(data, numero);
-          gerarPlanoDeCorteAgrupado(data);
+    async function consultarOrcamento() {
+      const numero = document.getElementById("numero").value.trim().toUpperCase();
+      if (!numero) return alert("Digite o número do orçamento.");
+
+      resultado.innerHTML = "<p>⏳ Consultando orçamento...</p>";
+      document.getElementById("btnSalvar").style.display = "none";
+
+      try {
+        const resVendas = await fetch(`https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/gviz/tq?sheet=Vendas`);
+        const resEstrutura = await fetch(`https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/gviz/tq?sheet=EstruturaProduto`);
+        const textoVendas = await resVendas.text();
+        const textoEstrutura = await resEstrutura.text();
+
+        const vendas = JSON.parse(textoVendas.substring(47).slice(0, -2)).table.rows;
+        const estrutura = JSON.parse(textoEstrutura.substring(47).slice(0, -2)).table.rows;
+
+        const linha = vendas.find(l => l.c[0]?.v === numero);
+        if (!linha) return resultado.innerHTML = `<p>❌ Orçamento ${numero} não encontrado.</p>`;
+
+        const produtos = (linha.c[4]?.v || "").split("|").map(txt => {
+          const [nome, qtdRaw] = txt.trim().split("(");
+          const qtd = parseFloat(qtdRaw?.replace(")", "") || 1);
+          return { nome: nome.trim(), qtd };
         });
-    }
 
-    function preencherTabela(data, numero) {
-      const tabela = document.getElementById("tabelaMateriais");
-      const corpo = tabela.querySelector("tbody");
-      corpo.innerHTML = "";
+        listaDeMateriais = {};
+        produtos.forEach(prod => {
+          estrutura.forEach(linha => {
+            const produto = linha.c[0]?.v;
+            const insumo = linha.c[1]?.v;
+            const qtdInsumo = parseFloat(linha.c[2]?.v || 0);
+            const unidade = linha.c[3]?.v || "";
 
-      document.getElementById("tituloLista").innerHTML = `<h3>Lista de Materiais do Orçamento ${numero}</h3>`;
+            if (produto === prod.nome) {
+              const chave = `${insumo} (${unidade})`;
+              listaDeMateriais[chave] = (listaDeMateriais[chave] || 0) + (qtdInsumo * prod.qtd);
+            }
+          });
+        });
 
-      data.forEach(item => {
-        const row = corpo.insertRow();
-        row.innerHTML = `
-          <td>${item.produto}</td>
-          <td>${item.peca}</td>
-          <td>${item.tipo}</td>
-          <td>${item.comprimento}</td>
-          <td>${item.qtdTotal}</td>
-          <td>${item.planoCorte}</td>
-          <td>${item.barrasNecessarias}</td>
-          <td>${item.aproveitamento}</td>
-        `;
-      });
-
-      tabela.style.display = "table";
-      document.getElementById("mensagem").innerText = "";
-    }
-
-    function gerarPlanoDeCorteAgrupado(data) {
-      const agrupado = {};
-
-      data.forEach(item => {
-        const codigo = item.peca;
-        const comprimento = parseFloat(item.comprimento);
-        const barra = parseFloat(item.tamanhoBarra || 600);
-        const qtd = parseFloat(item.qtdTotal);
-        const pecasPorBarra = Math.floor(barra / comprimento);
-        const barras = Math.ceil(qtd / pecasPorBarra);
-        const sobra = barra - (pecasPorBarra * comprimento);
-
-        if (!agrupado[codigo]) {
-          agrupado[codigo] = {
-            codigo,
-            barra,
-            comprimento,
-            pecasPorBarra,
-            barras,
-            sobra
-          };
-        } else {
-          agrupado[codigo].barras += barras;
+        let html = `<h3>Materiais para ${numero}</h3><ul>`;
+        for (let item in listaDeMateriais) {
+          html += `<li>${item}: <b>${listaDeMateriais[item].toFixed(2)}</b></li>`;
         }
-      });
+        html += `</ul>`;
 
-      let html = `<h3>Plano de Corte Agrupado</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Peça</th>
-              <th>Tam. Barra (cm)</th>
-              <th>Comprimento da Peça (cm)</th>
-              <th>Peças/Barra</th>
-              <th>Barras</th>
-              <th>Sobra (cm)</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-      for (let key in agrupado) {
-        const item = agrupado[key];
-        html += `
-          <tr>
-            <td>${item.codigo}</td>
-            <td>${item.barra.toFixed(2)}</td>
-            <td>${item.comprimento.toFixed(2)}</td>
-            <td>${item.pecasPorBarra}</td>
-            <td>${item.barras}</td>
-            <td>${item.sobra.toFixed(2)}</td>
-          </tr>`;
+        resultado.innerHTML = html;
+        document.getElementById("btnSalvar").style.display = "block";
+      } catch (err) {
+        resultado.innerHTML = `<p>⚠️ Erro na consulta. Verifique a planilha.</p>`;
+        console.error(err);
       }
-
-      html += `</tbody></table>`;
-      document.getElementById("planoDeCorteAgrupado").innerHTML = html;
     }
 
-    function salvarNaPlanilha() {
-      if (listaDeMateriais.length === 0) {
-        alert("Gere uma lista antes de salvar!");
-        return;
+    function salvarLiberacao() {
+      const numero = document.getElementById("numero").value.trim().toUpperCase();
+      if (!numero || Object.keys(listaDeMateriais).length === 0) {
+        return alert("Consulta inválida ou lista vazia.");
       }
 
       fetch(SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify(listaDeMateriais),
+        body: JSON.stringify({
+          tipo: "liberacao",
+          numero,
+          materiais: listaDeMateriais
+        }),
         headers: {
           'Content-Type': 'application/json'
         }
       })
-      .then(res => res.text())
-      .then(msg => {
-        document.getElementById("mensagem").innerText = msg;
+      .then(r => r.text())
+      .then(txt => {
+        alert(txt);
+        document.getElementById("btnSalvar").style.display = "none";
       })
-      .catch(() => {
-        document.getElementById("mensagem").innerText = "Erro ao salvar na planilha.";
-      });
-    }
-
-    function gerarPDF() {
-      const pdf = new jsPDF();
-      const titulo = document.getElementById("tituloLista").innerText;
-      const rows = [...document.querySelectorAll("table tr")].map(tr =>
-        [...tr.querySelectorAll("th, td")].map(td => td.innerText)
-      );
-
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text(titulo, 14, 20);
-
-      const startY = 30;
-      const rowHeight = 10;
-      const colWidths = [25, 25, 25, 30, 25, 30, 25, 40];
-      let y = startY;
-
-      rows.forEach((row, i) => {
-        let x = 14;
-        pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
-
-        row.forEach((cell, j) => {
-          pdf.rect(x, y, colWidths[j], rowHeight);
-          pdf.setFontSize(10);
-          pdf.text(String(cell), x + 2, y + 7, { maxWidth: colWidths[j] - 4 });
-          x += colWidths[j];
-        });
-
-        y += rowHeight;
-
-        if (y > 270) {
-          pdf.addPage();
-          y = startY;
-        }
-      });
-
-      pdf.save("Lista_de_Materiais.pdf");
+      .catch(err => alert("Erro ao salvar: " + err.message));
     }
   </script>
 </body>
