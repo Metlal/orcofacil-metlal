@@ -3,279 +3,182 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Orçafácil METLAL</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>Orçamento METLAL</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body, input, select, button {
-      font-family: 'Inter', sans-serif;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
     }
-    .container {
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #ccc;
-    }
-    input, select, button {
+    input, textarea, button {
+      margin: 5px 0;
+      padding: 5px;
       width: 100%;
-      padding: 8px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      max-width: 500px;
     }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .total {
-      font-weight: bold;
-      color: green;
-    }
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .row select, .row input, .row button {
-      flex: 1;
-    }
-    .medidas {
-      display: none;
-    }
-    #previewDesenho {
+    table {
+      border-collapse: collapse;
       margin-top: 10px;
-      border: 1px dashed #999;
-      padding: 10px;
-      text-align: center;
-      background: #f9f9f9;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+    }
+    #itens {
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <h2>Orçafácil METLAL</h2>
+
+  <h1>Gerador de Orçamento - METLAL</h1>
 
   <label>Cliente:</label>
-  <input id="cliente" type="text" />
+  <input type="text" id="cliente" />
 
   <label>Número do Orçamento:</label>
-  <input id="numero" type="text" readonly />
+  <input type="text" id="numero" />
 
   <label>Data:</label>
-  <input id="data" type="date" />
+  <input type="date" id="data" />
 
-  <div class="row">
-    <div>
-      <label>Grupo:</label>
-      <select id="grupoFiltro"><option value="">Todos</option></select>
-    </div>
-    <div>
-      <label>Produto:</label>
-      <select id="produto"><option>Carregando...</option></select>
-    </div>
+  <h3>Itens do Orçamento</h3>
+  <div id="itens">
+    <input type="text" id="produto" placeholder="Produto" />
+    <input type="number" id="qtd" placeholder="Qtd" />
+    <input type="text" id="unidade" placeholder="Unidade" />
+    <input type="number" id="preco" placeholder="Preço Unitário" />
+    <button onclick="adicionarItem()">Adicionar Item</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Quantidade</th>
+          <th>Unidade</th>
+          <th>Preço Unitário</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaItens"></tbody>
+    </table>
   </div>
 
-  <div class="row">
-    <div>
-      <label>Tipo:</label>
-      <select id="tipoProduto">
-        <option value="unidade">Por Unidade</option>
-        <option value="medidas">Com Medidas</option>
-      </select>
-    </div>
-  </div>
+  <button onclick="gerarPDF()">Gerar PDF</button>
+  <button onclick="enviarParaPlanilha()">Salvar na Planilha</button>
 
-  <div class="medidas" id="camposMedidas">
-    <label>Largura (m):</label>
-    <input id="largura" type="number" step="0.01" />
-    <label>Altura (m):</label>
-    <input id="altura" type="number" step="0.01" />
-    <label>Comprimento (m):</label>
-    <input id="comprimento" type="number" step="0.01" />
-    <div id="previewDesenho"></div>
-  </div>
+  <script>
+    let lista = [];
 
-  <label>Quantidade:</label>
-  <input id="quantidade" type="number" value="1" min="1" />
+    function adicionarItem() {
+      const nome = document.getElementById("produto").value;
+      const qtd = parseFloat(document.getElementById("qtd").value);
+      const unidade = document.getElementById("unidade").value;
+      const preco = parseFloat(document.getElementById("preco").value);
+      const subtotal = qtd * preco;
 
-  <div class="row">
-    <button onclick="adicionarItem()">Adicionar Produto</button>
-    <button onclick="gerarNumero()">🔁 Novo Orçamento</button>
-  </div>
+      lista.push({ nome, qtd, unidade, preco, subtotal });
+      atualizarTabela();
+    }
 
-  <div id="itens"></div>
-  <p class="total" id="subtotal">Subtotal: R$ 0,00</p>
-  <p class="total" id="total">Total: R$ 0,00</p>
-
-  <button onclick="gerarPDF()">📅 Gerar PDF e Salvar</button>
-</div>
-
-<script>
-  const webAppURL = "https://script.google.com/macros/s/AKfycbzpzw33mdELgzmGJZuvYU8RKV2L97xgBe9lrWfvIaP72IVupUX3Jwlx77bhd4HVU706/exec";
-  const sheetURL = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Produtos";
-
-  const produto = document.getElementById("produto");
-  const grupoFiltro = document.getElementById("grupoFiltro");
-  const cliente = document.getElementById("cliente");
-  const numero = document.getElementById("numero");
-  const data = document.getElementById("data");
-  const quantidade = document.getElementById("quantidade");
-  const totalDisplay = document.getElementById("total");
-  const subtotalDisplay = document.getElementById("subtotal");
-  const itensDiv = document.getElementById("itens");
-  const tipoProduto = document.getElementById("tipoProduto");
-  const camposMedidas = document.getElementById("camposMedidas");
-  const largura = document.getElementById("largura");
-  const altura = document.getElementById("altura");
-  const comprimento = document.getElementById("comprimento");
-  const previewDesenho = document.getElementById("previewDesenho");
-
-  let produtos = {}, lista = [];
-
-  tipoProduto.addEventListener("change", () => {
-    camposMedidas.style.display = tipoProduto.value === "medidas" ? "block" : "none";
-    if (tipoProduto.value !== "medidas") previewDesenho.innerHTML = "";
-  });
-
-  largura.addEventListener("input", desenharPreview);
-  altura.addEventListener("input", desenharPreview);
-
-  function desenharPreview() {
-    const l = parseFloat(largura.value) || 1;
-    const a = parseFloat(altura.value) || 1;
-    const escala = 100;
-    previewDesenho.innerHTML = `<svg width="${l * escala}" height="${a * escala}" style="border:1px solid #333">
-      <rect x="0" y="0" width="${l * escala}" height="${a * escala}" fill="#cce5ff" stroke="#333" />
-      <text x="10" y="20" font-size="12">${l}m x ${a}m</text>
-    </svg>`;
-  }
-
-  // Função para formatar número em Real Brasileiro
-  function formatarReal(valor) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
-  }
-
-  function carregarProdutos() {
-    fetch(sheetURL).then(res => res.text()).then(text => {
-      const json = JSON.parse(text.substr(47).slice(0, -2));
-      const grupos = new Set();
-      produtos = {}; produto.innerHTML = "<option value=''>Selecione</option>";
-      json.table.rows.forEach(row => {
-        const nome = row.c[0]?.v || "";
-        const grupo = row.c[1]?.v || "";
-        const preco = parseFloat(row.c[2]?.v || 0);
-        const unidade = row.c[3]?.v || "";
-        if (nome) {
-          produtos[nome] = { grupo, preco, unidade };
-          produto.innerHTML += `<option value="${nome}" data-grupo="${grupo}">${nome}</option>`;
-          grupos.add(grupo);
-        }
+    function atualizarTabela() {
+      const tabela = document.getElementById("tabelaItens");
+      tabela.innerHTML = "";
+      lista.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.nome}</td>
+          <td>${item.qtd}</td>
+          <td>${item.unidade}</td>
+          <td>R$ ${item.preco.toFixed(2)}</td>
+          <td>R$ ${item.subtotal.toFixed(2)}</td>
+        `;
+        tabela.appendChild(tr);
       });
-      grupoFiltro.innerHTML += [...grupos].map(g => `<option value="${g}">${g}</option>`).join("");
-    });
-  }
+    }
 
-  grupoFiltro.addEventListener("change", () => {
-    const filtro = grupoFiltro.value;
-    produto.innerHTML = "<option value=''>Selecione</option>";
-    for (const nome in produtos) {
-      if (!filtro || produtos[nome].grupo === filtro) {
-        produto.innerHTML += `<option value="${nome}">${nome}</option>`;
+    async function enviarParaPlanilha() {
+      const cliente = document.getElementById("cliente").value;
+      const numero = document.getElementById("numero").value;
+      const data = document.getElementById("data").value;
+
+      const dados = {
+        cliente,
+        numero,
+        data,
+        itens: lista
+      };
+
+      try {
+        const resposta = await fetch("https://script.google.com/macros/s/AKfycbzpzw33mdELgzmGJZuvYU8RKV2L97xgBe9lrWfvIaP72IVupUX3Jwlx77bhd4HVU706/exec", {
+          method: "POST",
+          body: JSON.stringify(dados),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const resultado = await resposta.json();
+        alert("Orçamento salvo com sucesso!");
+      } catch (e) {
+        alert("Erro ao enviar para planilha: " + e.message);
       }
     }
-  });
 
-  function gerarNumero() {
-    fetch(webAppURL).then(res => res.text()).then(num => {
-      numero.value = num;
-    }).catch(() => {
-      numero.value = "MT0001";
-    });
-    data.value = new Date().toISOString().split("T")[0];
-    lista = [];
-    atualizarLista();
-  }
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
 
-  function adicionarItem() {
-    const nome = produto.value;
-    const qtd = parseFloat(quantidade.value);
-    if (!nome || qtd <= 0) return alert("Selecione um produto válido.");
-    const dados = produtos[nome];
-    let descricao = nome;
-    if (tipoProduto.value === "medidas") {
-      const l = parseFloat(largura.value) || 0;
-      const a = parseFloat(altura.value) || 0;
-      const c = parseFloat(comprimento.value) || 0;
-      descricao += ` - ${l}x${a}x${c}m`;
+      const cliente = document.getElementById("cliente").value;
+      const numero = document.getElementById("numero").value;
+      const data = document.getElementById("data").value;
+
+      doc.setFontSize(14);
+      doc.text("Proposta Comercial", 105, 20, { align: "center" });
+
+      doc.setFontSize(11);
+      doc.text(`Cliente: ${cliente}`, 10, 30);
+      doc.text(`Orçamento: ${numero}`, 10, 36);
+      doc.text(`Data: ${data}`, 10, 42);
+
+      let total = 0;
+      const body = lista.map(item => {
+        total += item.subtotal;
+        return [
+          item.nome,
+          `${item.qtd} ${item.unidade}`,
+          `R$ ${item.preco.toFixed(2)}`,
+          `R$ ${item.subtotal.toFixed(2)}`
+        ];
+      });
+
+      doc.autoTable({
+        startY: 50,
+        head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
+        body: body,
+      });
+
+      let y = doc.lastAutoTable.finalY + 10;
+      doc.text(`VALOR TOTAL: R$ ${total.toFixed(2)}`, 10, y);
+      y += 10;
+      doc.text("CONDIÇÕES DE PAGAMENTO:", 10, y);
+      y += 6;
+      doc.text("- 30% Faturamento direto;", 12, y);
+      y += 6;
+      doc.text("- 25% Faturamento antecipado 30dd aprovação contrato;", 12, y);
+      y += 6;
+      doc.text("- 35% Na entrega do material;", 12, y);
+      y += 6;
+      doc.text("- 10% Após instalação;", 12, y);
+      y += 10;
+      doc.text("PRAZO DE EXECUÇÃO: A combinar", 10, y);
+      y += 6;
+      doc.text("VALIDADE DA PROPOSTA: 15 dias", 10, y);
+      y += 10;
+      doc.text("Atenciosamente,", 10, y);
+
+      doc.save(`${numero}.pdf`);
     }
-    const subtotal = dados.preco * qtd;
-    lista.push({ nome: descricao, qtd, preco: dados.preco, unidade: dados.unidade, subtotal });
-    atualizarLista();
-  }
+  </script>
 
-  function atualizarLista() {
-    let html = "<ul>", total = 0;
-    lista.forEach((item, i) => {
-      total += item.subtotal;
-      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - ${formatarReal(item.subtotal)} <button onclick="remover(${i})">❌</button></li>`;
-    });
-    html += "</ul>";
-    itensDiv.innerHTML = html;
-    subtotalDisplay.textContent = `Subtotal: ${formatarReal(total)}`;
-    totalDisplay.textContent = `Total: ${formatarReal(total)}`;
-  }
-
-  function remover(i) {
-    lista.splice(i, 1);
-    atualizarLista();
-  }
-
-  function gerarPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
-    doc.setFontSize(11);
-    doc.text(`Cliente: ${cliente.value}`, 10, 30);
-    doc.text(`Orçamento: ${numero.value}`, 10, 36);
-    doc.text(`Data: ${data.value}`, 10, 42);
-    let total = 0;
-    const body = lista.map(item => {
-      total += item.subtotal;
-      return [item.nome, `${item.qtd} ${item.unidade}`, formatarReal(item.preco), formatarReal(item.subtotal)];
-    });
-    doc.autoTable({ startY: 50, head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]], body });
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.text(`Total: ${formatarReal(total)}`, 10, finalY);
-    doc.save(`${numero.value}.pdf`);
-
-    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
-    fetch(webAppURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tipo: "salvar",
-        numero: numero.value,
-        cliente: cliente.value,
-        data: data.value,
-        produtos: produtosTexto,
-        total: total.toFixed(2),  // Mantém formato numérico para backend
-        status: "Pendente",
-        usuario: "admin"
-      })
-    }).then(r => r.text()).then(res => alert(res)).catch(err => alert("Erro ao salvar: " + err.message));
-  }
-
-  carregarProdutos();
-  gerarNumero();
-</script>
 </body>
 </html>
