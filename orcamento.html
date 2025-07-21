@@ -241,7 +241,7 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     doc.setFontSize(14);
-    doc.text("Proposta Comercial", 105, 20, { align: "center" });
+    doc.text("Proposta Comercial Metlal", 105, 20, { align: "center" });
 
     doc.setFontSize(11);
     doc.text(`Cliente: ${cliente.value}`, 10, 30);
@@ -267,7 +267,7 @@
     y += 6;
     doc.text("- 30% Faturamento direto;", 12, y);
     y += 6;
-    doc.text("- 25% Faturamento antecipado 30dd aprovação contrato;", 12, y);
+    doc.text("- 25% Faturamento antecipado 30d aprovação contrato;", 12, y);
     y += 6;
     doc.text("- 35% Na entrega do material;", 12, y);
     y += 6;
