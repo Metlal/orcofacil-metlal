@@ -158,6 +158,11 @@
     </svg>`;
   }
 
+  // Função para formatar número em Real Brasileiro
+  function formatarReal(valor) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+  }
+
   function carregarProdutos() {
     fetch(sheetURL).then(res => res.text()).then(text => {
       const json = JSON.parse(text.substr(47).slice(0, -2));
@@ -220,12 +225,12 @@
     let html = "<ul>", total = 0;
     lista.forEach((item, i) => {
       total += item.subtotal;
-      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - R$ ${item.subtotal.toFixed(2)} <button onclick="remover(${i})">❌</button></li>`;
+      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - ${formatarReal(item.subtotal)} <button onclick="remover(${i})">❌</button></li>`;
     });
     html += "</ul>";
     itensDiv.innerHTML = html;
-    subtotalDisplay.textContent = `Subtotal: R$ ${total.toFixed(2)}`;
-    totalDisplay.textContent = `Total: R$ ${total.toFixed(2)}`;
+    subtotalDisplay.textContent = `Subtotal: ${formatarReal(total)}`;
+    totalDisplay.textContent = `Total: ${formatarReal(total)}`;
   }
 
   function remover(i) {
@@ -245,11 +250,11 @@
     let total = 0;
     const body = lista.map(item => {
       total += item.subtotal;
-      return [item.nome, `${item.qtd} ${item.unidade}`, `R$ ${item.preco.toFixed(2)}`, `R$ ${item.subtotal.toFixed(2)}`];
+      return [item.nome, `${item.qtd} ${item.unidade}`, formatarReal(item.preco), formatarReal(item.subtotal)];
     });
     doc.autoTable({ startY: 50, head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]], body });
     const finalY = doc.lastAutoTable.finalY + 10;
-    doc.text(`Total: R$ ${total.toFixed(2)}`, 10, finalY);
+    doc.text(`Total: ${formatarReal(total)}`, 10, finalY);
     doc.save(`${numero.value}.pdf`);
 
     const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
@@ -262,7 +267,7 @@
         cliente: cliente.value,
         data: data.value,
         produtos: produtosTexto,
-        total: total.toFixed(2),
+        total: total.toFixed(2),  // Mantém formato numérico para backend
         status: "Pendente",
         usuario: "admin"
       })
