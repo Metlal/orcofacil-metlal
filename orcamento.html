@@ -238,41 +238,75 @@
     atualizarLista();
   }
 
-  function gerarPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+  <script>
+function gerarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Adicionar imagem (a logo da empresa)
+  const img = new Image();
+  img.src = "data:image/png;base64,..."; // 🔁 COLE AQUI o base64 da logo da METLAL
+
+  img.onload = function () {
+    // Adiciona logo ao PDF
+    doc.addImage(img, "PNG", 10, 10, 60, 20); // x, y, largura, altura
+
+    // Título
     doc.setFontSize(14);
-    doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
+    doc.text("Proposta Comercial", 105, 40, { align: "center" });
+
+    // Informações básicas
     doc.setFontSize(11);
-    doc.text(`Cliente: ${cliente.value}`, 10, 30);
-    doc.text(`Orçamento: ${numero.value}`, 10, 36);
-    doc.text(`Data: ${data.value}`, 10, 42);
+    doc.text(`Cliente: ${cliente.value}`, 10, 50);
+    doc.text(`Orçamento: ${numero.value}`, 10, 56);
+    doc.text(`Data: ${data.value}`, 10, 62);
+
+    // Tabela de itens
     let total = 0;
     const body = lista.map(item => {
       total += item.subtotal;
-      return [item.nome, `${item.qtd} ${item.unidade}`, formatarReal(item.preco), formatarReal(item.subtotal)];
+      return [
+        item.nome,
+        `${item.qtd} ${item.unidade}`,
+        `R$ ${item.preco.toFixed(2).replace(".", ",")}`,
+        `R$ ${item.subtotal.toFixed(2).replace(".", ",")}`
+      ];
     });
-    doc.autoTable({ startY: 50, head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]], body });
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.text(`Total: ${formatarReal(total)}`, 10, finalY);
-    doc.save(`${numero.value}.pdf`);
 
-    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
-    fetch(webAppURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tipo: "salvar",
-        numero: numero.value,
-        cliente: cliente.value,
-        data: data.value,
-        produtos: produtosTexto,
-        total: total.toFixed(2),  // Mantém formato numérico para backend
-        status: "Pendente",
-        usuario: "admin"
-      })
-    }).then(r => r.text()).then(res => alert(res)).catch(err => alert("Erro ao salvar: " + err.message));
-  }
+    doc.autoTable({
+      startY: 70,
+      head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]],
+      body
+    });
+
+    let y = doc.lastAutoTable.finalY + 10;
+
+    // Resumo final e condições
+    doc.setFontSize(11);
+    doc.text(`VALOR TOTAL: R$ ${total.toFixed(2).replace(".", ",")}`, 10, y);
+    y += 10;
+    doc.text("CONDIÇÕES DE PAGAMENTO:", 10, y);
+    y += 6;
+    doc.text("- 30% Faturamento direto;", 12, y);
+    y += 6;
+    doc.text("- 25% Faturamento antecipado 30dd aprovação contrato;", 12, y);
+    y += 6;
+    doc.text("- 35% Na entrega do material;", 12, y);
+    y += 6;
+    doc.text("- 10% Após instalação;", 12, y);
+    y += 10;
+    doc.text("PRAZO DE EXECUÇÃO: A combinar", 10, y);
+    y += 6;
+    doc.text("VALIDADE DA PROPOSTA: 15 (quinze) dias", 10, y);
+    y += 10;
+    doc.text("Atenciosamente,", 10, y);
+
+    // Salvando
+    doc.save(`${numero.value}.pdf`);
+  };
+}
+</script>
+
 
   carregarProdutos();
   gerarNumero();
