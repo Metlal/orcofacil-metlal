@@ -1,148 +1,281 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <title>Orçamento de Produtos</title>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Orçafácil METLAL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button, select, textarea { margin: 5px 0; padding: 5px; width: 100%; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
+    body, input, select, button {
+      font-family: 'Inter', sans-serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .total {
+      font-weight: bold;
+      color: green;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .row select, .row input, .row button {
+      flex: 1;
+    }
+    .medidas {
+      display: none;
+    }
+    #previewDesenho {
+      margin-top: 10px;
+      border: 1px dashed #999;
+      padding: 10px;
+      text-align: center;
+      background: #f9f9f9;
+    }
   </style>
 </head>
 <body>
-  <h1>Gerador de Orçamento</h1>
+<div class="container">
+  <h2>Orçafácil METLAL</h2>
 
-  <label for="numeroProposta">Número da Proposta:</label>
-  <input type="text" id="numeroProposta" placeholder="Ex: 2025-001" />
+  <label>Cliente:</label>
+  <input id="cliente" type="text" />
 
-  <label for="descricaoProduto">Descrição do Produto:</label>
-  <textarea id="descricaoProduto" placeholder="Descrição detalhada do produto"></textarea>
+  <label>Número do Orçamento:</label>
+  <input id="numero" type="text" readonly />
 
-  <label for="produto">Produto:</label>
-  <input type="text" id="produto" placeholder="Ex: Portão de ferro" />
+  <label>Data:</label>
+  <input id="data" type="date" />
 
-  <label for="quantidade">Quantidade:</label>
-  <input type="number" id="quantidade" min="1" value="1" />
+  <div class="row">
+    <div>
+      <label>Grupo:</label>
+      <select id="grupoFiltro"><option value="">Todos</option></select>
+    </div>
+    <div>
+      <label>Produto:</label>
+      <select id="produto"><option>Carregando...</option></select>
+    </div>
+  </div>
 
-  <label for="precoUnitario">Preço Unitário (R$):</label>
-  <input type="number" id="precoUnitario" step="0.01" />
+  <div class="row">
+    <div>
+      <label>Tipo:</label>
+      <select id="tipoProduto">
+        <option value="unidade">Por Unidade</option>
+        <option value="medidas">Com Medidas</option>
+      </select>
+    </div>
+  </div>
 
-  <button onclick="adicionarProduto()">Adicionar ao Orçamento</button>
+  <div class="medidas" id="camposMedidas">
+    <label>Largura (m):</label>
+    <input id="largura" type="number" step="0.01" />
+    <label>Altura (m):</label>
+    <input id="altura" type="number" step="0.01" />
+    <label>Comprimento (m):</label>
+    <input id="comprimento" type="number" step="0.01" />
+    <div id="previewDesenho"></div>
+  </div>
 
-  <h2>Itens do Orçamento</h2>
-  <table id="tabelaOrcamento">
-    <thead>
-      <tr>
-        <th>Produto</th>
-        <th>Quantidade</th>
-        <th>Preço Unitário</th>
-        <th>Subtotal</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <label>Quantidade:</label>
+  <input id="quantidade" type="number" value="1" min="1" />
 
-  <h3>Total: R$ <span id="valorTotal">0.00</span></h3>
-  <input type="hidden" id="valorExtenso" />
+  <div class="row">
+    <button onclick="adicionarItem()">Adicionar Produto</button>
+    <button onclick="gerarNumero()">🔁 Novo Orçamento</button>
+  </div>
 
-  <button onclick="gerarPDF()">Gerar PDF</button>
+  <div id="itens"></div>
+  <p class="total" id="subtotal">Subtotal: R$ 0,00</p>
+  <p class="total" id="total">Total: R$ 0,00</p>
 
-  <script>
-    const tabela = document.querySelector('#tabelaOrcamento tbody');
+  <button onclick="gerarPDF()">📅 Gerar PDF e Salvar</button>
+</div>
+
+<script>
+  const webAppURL = "https://script.google.com/macros/s/AKfycbzpzw33mdELgzmGJZuvYU8RKV2L97xgBe9lrWfvIaP72IVupUX3Jwlx77bhd4HVU706/exec";
+  const sheetURL = "https://docs.google.com/spreadsheets/d/1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4/gviz/tq?sheet=Produtos";
+
+  const produto = document.getElementById("produto");
+  const grupoFiltro = document.getElementById("grupoFiltro");
+  const cliente = document.getElementById("cliente");
+  const numero = document.getElementById("numero");
+  const data = document.getElementById("data");
+  const quantidade = document.getElementById("quantidade");
+  const totalDisplay = document.getElementById("total");
+  const subtotalDisplay = document.getElementById("subtotal");
+  const itensDiv = document.getElementById("itens");
+  const tipoProduto = document.getElementById("tipoProduto");
+  const camposMedidas = document.getElementById("camposMedidas");
+  const largura = document.getElementById("largura");
+  const altura = document.getElementById("altura");
+  const comprimento = document.getElementById("comprimento");
+  const previewDesenho = document.getElementById("previewDesenho");
+
+  let produtos = {}, lista = [];
+
+  tipoProduto.addEventListener("change", () => {
+    camposMedidas.style.display = tipoProduto.value === "medidas" ? "block" : "none";
+    if (tipoProduto.value !== "medidas") previewDesenho.innerHTML = "";
+  });
+
+  largura.addEventListener("input", desenharPreview);
+  altura.addEventListener("input", desenharPreview);
+
+  function desenharPreview() {
+    const l = parseFloat(largura.value) || 1;
+    const a = parseFloat(altura.value) || 1;
+    const escala = 100;
+    previewDesenho.innerHTML = `<svg width="${l * escala}" height="${a * escala}" style="border:1px solid #333">
+      <rect x="0" y="0" width="${l * escala}" height="${a * escala}" fill="#cce5ff" stroke="#333" />
+      <text x="10" y="20" font-size="12">${l}m x ${a}m</text>
+    </svg>`;
+  }
+
+  // Função para formatar número em Real Brasileiro
+  function formatarReal(valor) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+  }
+
+  function carregarProdutos() {
+    fetch(sheetURL).then(res => res.text()).then(text => {
+      const json = JSON.parse(text.substr(47).slice(0, -2));
+      const grupos = new Set();
+      produtos = {}; produto.innerHTML = "<option value=''>Selecione</option>";
+      json.table.rows.forEach(row => {
+        const nome = row.c[0]?.v || "";
+        const grupo = row.c[1]?.v || "";
+        const preco = parseFloat(row.c[2]?.v || 0);
+        const unidade = row.c[3]?.v || "";
+        if (nome) {
+          produtos[nome] = { grupo, preco, unidade };
+          produto.innerHTML += `<option value="${nome}" data-grupo="${grupo}">${nome}</option>`;
+          grupos.add(grupo);
+        }
+      });
+      grupoFiltro.innerHTML += [...grupos].map(g => `<option value="${g}">${g}</option>`).join("");
+    });
+  }
+
+  grupoFiltro.addEventListener("change", () => {
+    const filtro = grupoFiltro.value;
+    produto.innerHTML = "<option value=''>Selecione</option>";
+    for (const nome in produtos) {
+      if (!filtro || produtos[nome].grupo === filtro) {
+        produto.innerHTML += `<option value="${nome}">${nome}</option>`;
+      }
+    }
+  });
+
+  function gerarNumero() {
+    fetch(webAppURL).then(res => res.text()).then(num => {
+      numero.value = num;
+    }).catch(() => {
+      numero.value = "MT0001";
+    });
+    data.value = new Date().toISOString().split("T")[0];
+    lista = [];
+    atualizarLista();
+  }
+
+  function adicionarItem() {
+    const nome = produto.value;
+    const qtd = parseFloat(quantidade.value);
+    if (!nome || qtd <= 0) return alert("Selecione um produto válido.");
+    const dados = produtos[nome];
+    let descricao = nome;
+    if (tipoProduto.value === "medidas") {
+      const l = parseFloat(largura.value) || 0;
+      const a = parseFloat(altura.value) || 0;
+      const c = parseFloat(comprimento.value) || 0;
+      descricao += ` - ${l}x${a}x${c}m`;
+    }
+    const subtotal = dados.preco * qtd;
+    lista.push({ nome: descricao, qtd, preco: dados.preco, unidade: dados.unidade, subtotal });
+    atualizarLista();
+  }
+
+  function atualizarLista() {
+    let html = "<ul>", total = 0;
+    lista.forEach((item, i) => {
+      total += item.subtotal;
+      html += `<li>${item.nome} (${item.qtd} ${item.unidade}) - ${formatarReal(item.subtotal)} <button onclick="remover(${i})">❌</button></li>`;
+    });
+    html += "</ul>";
+    itensDiv.innerHTML = html;
+    subtotalDisplay.textContent = `Subtotal: ${formatarReal(total)}`;
+    totalDisplay.textContent = `Total: ${formatarReal(total)}`;
+  }
+
+  function remover(i) {
+    lista.splice(i, 1);
+    atualizarLista();
+  }
+
+  function gerarPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(`Cliente: ${cliente.value}`, 10, 30);
+    doc.text(`Orçamento: ${numero.value}`, 10, 36);
+    doc.text(`Data: ${data.value}`, 10, 42);
     let total = 0;
+    const body = lista.map(item => {
+      total += item.subtotal;
+      return [item.nome, `${item.qtd} ${item.unidade}`, formatarReal(item.preco), formatarReal(item.subtotal)];
+    });
+    doc.autoTable({ startY: 50, head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]], body });
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.text(`Total: ${formatarReal(total)}`, 10, finalY);
+    doc.save(`${numero.value}.pdf`);
 
-    function adicionarProduto() {
-      const produto = document.getElementById('produto').value;
-      const quantidade = parseInt(document.getElementById('quantidade').value);
-      const preco = parseFloat(document.getElementById('precoUnitario').value);
+    const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
+    fetch(webAppURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: "salvar",
+        numero: numero.value,
+        cliente: cliente.value,
+        data: data.value,
+        produtos: produtosTexto,
+        total: total.toFixed(2),  // Mantém formato numérico para backend
+        status: "Pendente",
+        usuario: "admin"
+      })
+    }).then(r => r.text()).then(res => alert(res)).catch(err => alert("Erro ao salvar: " + err.message));
+  }
 
-      if (!produto || isNaN(quantidade) || isNaN(preco)) {
-        alert("Preencha todos os campos corretamente.");
-        return;
-      }
-
-      const subtotal = quantidade * preco;
-      total += subtotal;
-
-      const row = tabela.insertRow();
-      row.insertCell(0).innerText = produto;
-      row.insertCell(1).innerText = quantidade;
-      row.insertCell(2).innerText = preco.toFixed(2);
-      row.insertCell(3).innerText = subtotal.toFixed(2);
-
-      document.getElementById('valorTotal').innerText = total.toFixed(2);
-      document.getElementById('valorExtenso').value = converterParaExtenso(total);
-      
-      // Limpar campos
-      document.getElementById('produto').value = "";
-      document.getElementById('quantidade').value = 1;
-      document.getElementById('precoUnitario').value = "";
-    }
-
-    function gerarPDF() {
-      const numeroProposta = document.getElementById('numeroProposta').value;
-      const descricao = document.getElementById('descricaoProduto').value;
-      const valorExtenso = document.getElementById('valorExtenso').value;
-      const conteudoTabela = tabela.innerHTML;
-      const total = document.getElementById('valorTotal').innerText;
-
-      let janela = window.open('', '', 'width=800,height=600');
-      janela.document.write(`<html><head><title>Orçamento</title></head><body>`);
-      janela.document.write(`<h2>Proposta Nº: ${numeroProposta}</h2>`);
-      janela.document.write(`<p><strong>Descrição do Produto:</strong> ${descricao}</p>`);
-      janela.document.write(`<table border='1' style='width:100%; border-collapse: collapse;'><thead><tr>
-        <th>Produto</th><th>Quantidade</th><th>Preço Unitário</th><th>Subtotal</th></tr></thead><tbody>${conteudoTabela}</tbody></table>`);
-      janela.document.write(`<h3>Total: R$ ${total}</h3>`);
-      janela.document.write(`<p><strong>Valor por extenso:</strong> ${valorExtenso}</p>`);
-      janela.document.write(`</body></html>`);
-      janela.document.close();
-      janela.print();
-    }
-
-    function converterParaExtenso(valor) {
-      const unidades = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove"];
-      const especiais = ["dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
-      const dezenas = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
-      const centenas = ["", "cem", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
-
-      function extenso(n) {
-        if (n === 0) return "zero";
-        let parteInteira = Math.floor(n);
-        let parteDecimal = Math.round((n - parteInteira) * 100);
-
-        function escreverNumero(num) {
-          if (num === 100) return "cem";
-          let c = Math.floor(num / 100);
-          let d = Math.floor((num % 100) / 10);
-          let u = num % 10;
-          let str = "";
-
-          if (c > 0) {
-            str += c === 1 && d === 0 && u === 0 ? "cem" : centenas[c];
-            if (d > 0 || u > 0) str += " e ";
-          }
-
-          if (d === 1) {
-            str += especiais[u];
-          } else {
-            if (d > 1) str += dezenas[d];
-            if (u > 0) str += (d > 1 ? " e " : "") + unidades[u];
-          }
-
-          return str;
-        }
-
-        let resultado = escreverNumero(parteInteira) + " reais";
-        if (parteDecimal > 0) {
-          resultado += " e " + escreverNumero(parteDecimal) + " centavos";
-        }
-        return resultado;
-      }
-
-      return extenso(valor);
-    }
-  </script>
+  carregarProdutos();
+  gerarNumero();
+</script>
 </body>
 </html>
