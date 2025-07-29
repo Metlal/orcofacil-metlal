@@ -235,7 +235,7 @@ async function gerarLista(){
     const linhasBOM = [];
     bom.forEach((qtd, key) => {
       const [insumo, unidade] = key.split("__");
-      linhasBOM.push({insumo, Medidas, qtd});
+      linhasBOM.push({insumo, Unidade, qtd});
     });
     // ordena por insumo
     linhasBOM.sort((a,b)=>a.insumo.localeCompare(b.insumo, 'pt-BR'));
