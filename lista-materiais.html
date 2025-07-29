@@ -183,7 +183,7 @@ async function gerarLista(){
     const pIdx = headerIndex(est.headers, "Produto");
     const iIdx = headerIndex(est.headers, "Insumo");
     const qIdx = headerIndex(est.headers, "Quantidade");
-    const uIdx = headerIndex(est.headers, "Medidas");
+    const uIdx = headerIndex(est.headers, "Unidade");
     if (pIdx<0 || iIdx<0 || qIdx<0){
       statusMsg('Colunas obrigatórias não encontradas na aba <b>EstruturaProduto</b>.', "err");
       return;
@@ -235,7 +235,7 @@ async function gerarLista(){
     const linhasBOM = [];
     bom.forEach((qtd, key) => {
       const [insumo, unidade] = key.split("__");
-      linhasBOM.push({insumo, Unidade, qtd});
+      linhasBOM.push({insumo, unidade, qtd});
     });
     // ordena por insumo
     linhasBOM.sort((a,b)=>a.insumo.localeCompare(b.insumo, 'pt-BR'));
