@@ -235,7 +235,7 @@ async function gerarLista(){
     const linhasBOM = [];
     bom.forEach((qtd, key) => {
       const [insumo, unidade] = key.split("__");
-      linhasBOM.push({insumo, Medidas, qtd});
+      linhasBOM.push({insumo, Unidade, qtd});
     });
     // ordena por insumo
     linhasBOM.sort((a,b)=>a.insumo.localeCompare(b.insumo, 'pt-BR'));
@@ -286,7 +286,7 @@ function gerarPDF(){
   const body = ultimoBOM.linhasBOM.map(i => [i.insumo, i.unidade||"", fmt(i.qtd)]);
   doc.autoTable({
     startY: 60,
-    head: [["Insumo", "Medidas", "Quantidade Total"]],
+    head: [["Insumo", "Unidade", "Quantidade Total"]],
     body,
     styles: { fontSize: 9, cellPadding: 2 },
     headStyles: { fillColor: [11,98,214] },
