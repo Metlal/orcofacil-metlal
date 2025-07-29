@@ -5,281 +5,298 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Liberação de Materiais (BOM) – Orçamentos + EstruturaProduto</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#f6f8fa; margin:0; padding:24px; }
-  .card { background:#fff; max-width:1100px; margin:0 auto; padding:18px 20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
-  h1 { margin:0 0 10px; font-size:20px; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 0; }
-  .row > * { flex:1 1 200px; }
-  input[type="text"], button { padding:10px; border-radius:6px; border:1px solid #cfd8dc; font-size:14px; }
-  button { background:#1976d2; color:#fff; border:none; cursor:pointer; }
-  button:hover { background:#125ea3; }
-  .muted { color:#607d8b; font-size:13px; margin:6px 0 0; }
-  .status { margin:10px 0; font-size:14px; }
-  .status.ok { color:#2e7d32; }
-  .status.err { color:#c62828; }
-  table { width:100%; border-collapse:collapse; margin-top:14px; }
-  th, td { border:1px solid #e0e0e0; padding:8px; text-align:left; font-size:14px; }
-  th { background:#eceff1; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-  .right { text-align:right; }
-  .small { font-size:12px; color:#607d8b; }
-  .pill { display:inline-block; padding:2px 8px; background:#e3f2fd; border-radius:999px; font-size:12px; color:#1565c0; }
+  :root{
+    --bg:#f5f7fb; --card:#ffffff; --border:#e6eaf0; --muted:#6b7a90; --ink:#0f172a;
+    --brand:#0b5ed7; --brand-2:#0848a6; --ok:#2e7d32; --err:#c62828;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", "Apple Color Emoji", "Segoe UI Emoji"; color:var(--ink); background:var(--bg);}
+  .wrap{max-width:1100px; margin:32px auto; padding:0 16px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 6px 18px rgba(16,24,40,.04); padding:20px;}
+  h1{margin:0 0 12px; font-size:22px; display:flex; align-items:center; gap:8px}
+  h1 .emoji{font-size:22px}
+  .row{display:flex; gap:12px; flex-wrap:wrap; margin-top:10px}
+  .row > *{flex:1 1 220px}
+  label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+  input[type="text"]{width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border); font-size:14px}
+  .btn{appearance:none; border:none; border-radius:8px; padding:10px 14px; font-weight:600; color:#fff; background:var(--brand); cursor:pointer}
+  .btn:hover{background:var(--brand-2)}
+  .btn.secondary{background:#64748b}
+  .btn.secondary:hover{background:#475569}
+  .status{margin-top:10px; font-size:14px}
+  .status.ok{color:var(--ok)} .status.err{color:var(--err)} .status.muted{color:var(--muted)}
+  .pill{display:inline-block; padding:2px 8px; background:#e7f1ff; color:#0b5ed7; border-radius:999px; font-size:12px}
+  .mono{font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace}
+  .hint{font-size:12px; color:var(--muted); margin-top:4px}
+  table{width:100%; border-collapse:collapse; margin-top:14px}
+  th,td{border:1px solid var(--border); padding:8px 10px; font-size:14px}
+  th{background:#f1f4f9; text-align:left}
+  td.right{text-align:right}
+  .section-title{margin:16px 0 6px; font-size:15px; color:var(--muted)}
+  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+  .summary{margin-top:6px; font-size:13px; color:var(--muted)}
 </style>
 </head>
 <body>
-  <div class="card">
-    <h1>📦 Liberação de Materiais (BOM)</h1>
-    <div class="row">
-      <div>
-        <label>Nº do Orçamento</label>
-        <input id="orcamentoInput" type="text" placeholder="Ex.: MT0012" class="mono" />
-        <div class="small">Busca na aba <b>Orçamentos</b>.</div>
+  <div class="wrap">
+    <div class="card">
+      <h1><span class="emoji">📦</span> Liberação de Materiais (BOM)</h1>
+
+      <div class="row">
+        <div>
+          <label for="orcamentoInput">Nº do Orçamento</label>
+          <input id="orcamentoInput" type="text" placeholder="Ex.: MT0012" class="mono" />
+          <div class="hint">Busca na aba <b>Orçamentos</b>.</div>
+        </div>
+        <div style="flex:0 0 auto; align-self:end;">
+          <div class="actions">
+            <button id="btnGerar" class="btn">Gerar Lista de Materiais</button>
+            <button id="btnPDF" class="btn secondary" disabled>Gerar PDF da Liberação</button>
+          </div>
+        </div>
       </div>
-      <div style="flex:0 0 auto; align-self:end;">
-        <button id="btnGerar">Gerar Lista de Materiais</button>
-      </div>
-    </div>
 
-    <div id="status" class="status muted">Informe o número e clique em “Gerar Lista de Materiais”.</div>
+      <div id="status" class="status muted">Informe o número e clique em “Gerar Lista de Materiais”.</div>
 
-    <div id="resumoOrcamento" class="small"></div>
+      <div id="resumoOrcamento" class="summary"></div>
 
-    <div id="resultado" style="margin-top:10px;">
-      <!-- Tabelas serão inseridas aqui -->
+      <div id="resultado" style="margin-top:10px;"></div>
     </div>
   </div>
 
-<script>
-/** ========================
- *  CONFIGURAÇÃO
- *  ======================== */
-const SHEET_ID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4"; // <<< troque se necessário
-const ABA_ORCAMENTOS = "Orçamentos";        // nomes exatamente como na planilha
-const ABA_ESTRUTURA = "EstruturaProduto";
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+  /** ========================
+   *  CONFIG
+   *  ======================== */
+  const SHEET_ID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4"; // troque se necessário
+  const ABA_ORCAMENTOS   = "Orçamentos";
+  const ABA_ESTRUTURA    = "EstruturaProduto";
 
-/** ========================
- *  UTILITÁRIOS
- *  ======================== */
-
-/** Lê uma aba via endpoint gviz e retorna {cols, rows, headers, data[]} */
-async function fetchSheet(aba) {
-  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/gviz/tq?sheet=${encodeURIComponent(aba)}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  // gviz retorna "/*O_o*/\ngoogle.visualization.Query.setResponse({...});"
-  const json = JSON.parse(text.substring(47).slice(0, -2));
-  const cols = (json.table.cols || []).map(c => (c.label || "").trim());
-  const rows = (json.table.rows || []);
-  const data = rows.map(r => (r.c || []).map(cell => (cell ? cell.v : null)));
-  return { cols, rows, headers: cols, data };
-}
-
-/** Mapa header->index, case-insensitive */
-function headerIndex(headers, ...names) {
-  const norm = s => String(s || "").trim().toLowerCase();
-  const idxMap = new Map(headers.map((h,i)=>[norm(h), i]));
-  for (const n of names) {
-    const k = norm(n);
-    if (idxMap.has(k)) return idxMap.get(k);
+  /** ========================
+   *  UTIL
+   *  ======================== */
+  async function fetchSheet(aba){
+    const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/gviz/tq?sheet=${encodeURIComponent(aba)}`;
+    const res = await fetch(url);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47).slice(0,-2));
+    const headers = (json.table.cols||[]).map(c => (c.label||"").trim());
+    const data = (json.table.rows||[]).map(r => (r.c||[]).map(c => c? c.v : null));
+    return {headers, data};
   }
-  return -1;
-}
-
-/** Remove acentos e normaliza para comparação */
-function normKey(s) {
-  return String(s || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
-}
-
-/** Tenta extrair pares {nome, qtd} de um texto de produtos "A (2) | B (3m²)" etc. */
-function parseProdutosTexto(texto) {
-  if (!texto) return [];
-  return String(texto)
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(part => {
-      // "Nome ( 2,5 )" ou "Nome ( 2 )" (ignora unidade dentro dos parênteses)
-      const m = part.match(/^(.+?)\s*\(\s*([\d.,]+)\s*[a-zA-ZçÇºª%]*\s*\)$/);
-      if (m) {
-        const nome = m[1].trim();
-        const qtd = parseFloat(m[2].replace(",", "."));
-        return { nome, qtd: isNaN(qtd) ? 1 : qtd };
-      }
-      // sem parênteses -> quantidade 1
-      return { nome: part, qtd: 1 };
-    });
-}
-
-/** Soma em um dicionário acumulador por chave */
-function accAdd(map, key, val) {
-  map.set(key, (map.get(key) || 0) + val);
-}
-
-/** Formata número com até 3 casas quando necessário */
-function fmtQty(n) {
-  const v = Number(n || 0);
-  return (Math.round(v * 1000) / 1000).toString().replace(".", ",");
-}
-
-/** Cria elemento a partir de HTML */
-function el(html) {
-  const div = document.createElement("div");
-  div.innerHTML = html.trim();
-  return div.firstChild;
-}
-
-/** ========================
- *  LÓGICA PRINCIPAL
- *  ======================== */
-
-const statusEl = document.getElementById("status");
-const resultadoEl = document.getElementById("resultado");
-const resumoOrcEl = document.getElementById("resumoOrcamento");
-document.getElementById("btnGerar").addEventListener("click", gerarLista);
-
-async function gerarLista() {
-  const numero = (document.getElementById("orcamentoInput").value || "").trim();
-  if (!numero) {
-    statusMsg("Digite o número do orçamento.", "err");
-    return;
+  const norm = s => String(s||"").trim().toLowerCase();
+  const normKey = s => String(s||"").trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"");
+  function headerIndex(headers, ...names){
+    const m = new Map(headers.map((h,i)=>[norm(h), i]));
+    for (const n of names){ if (m.has(norm(n))) return m.get(norm(n)); }
+    return -1;
+  }
+  function parseQtdFromProdutosCell(txt){
+    // Tenta pegar "Nome (2,5)" -> retorna 2.5; se não tiver, 1
+    if (!txt) return 1;
+    const m = String(txt).match(/\(\s*([\d.,]+)\s*(?:[a-zA-Z%ºª]+)?\s*\)$/);
+    if (!m) return 1;
+    const n = parseFloat(m[1].replace(",", "."));
+    return isNaN(n) ? 1 : n;
+  }
+  function fmt(n){
+    const v = Number(n||0);
+    return (Math.round(v*1000)/1000).toString().replace(".", ",");
+  }
+  function statusMsg(msg, type="muted"){
+    const el = document.getElementById("status");
+    el.textContent = msg; el.className = `status ${type}`;
   }
 
-  try {
-    statusMsg("Carregando dados do orçamento…", "muted");
-    const [orc, est] = await Promise.all([
-      fetchSheet(ABA_ORCAMENTOS),
-      fetchSheet(ABA_ESTRUTURA)
-    ]);
+  let ultimoContextoPDF = null;
 
-    // Identificar colunas em Orçamentos
-    const idxNum = headerIndex(orc.headers, "N° Orçamento", "Nº Orçamento", "Numero do Orçamento", "Número do Orçamento", "Orçamento");
-    const idxProdutos = headerIndex(orc.headers, "Produtos", "Itens", "Lista de Produtos");
-    const idxCliente  = headerIndex(orc.headers, "Cliente");
-    const idxData     = headerIndex(orc.headers, "Data");
+  document.getElementById("btnGerar").addEventListener("click", gerarLista);
+  document.getElementById("btnPDF").addEventListener("click", gerarPDF);
 
-    if (idxNum < 0 || idxProdutos < 0) {
-      statusMsg("Não encontrei as colunas esperadas na aba 'Orçamentos' (ex.: “N° Orçamento”, “Produtos”).", "err");
-      return;
-    }
+  async function gerarLista(){
+    const numero = (document.getElementById("orcamentoInput").value||"").trim();
+    if (!numero){ statusMsg("Digite o número do orçamento.", "err"); return; }
 
-    // Localizar a linha do orçamento
-    const linha = orc.data.find(r => String(r[idxNum] || "").trim().toUpperCase() === numero.toUpperCase());
-    if (!linha) {
-      statusMsg(`Orçamento ${numero} não encontrado na aba "Orçamentos".`, "err");
-      resultadoEl.innerHTML = "";
-      resumoOrcEl.innerHTML = "";
-      return;
-    }
+    try{
+      statusMsg("Carregando dados…", "muted");
+      const [orc, est] = await Promise.all([fetchSheet(ABA_ORCAMENTOS), fetchSheet(ABA_ESTRUTURA)]);
 
-    const cliente = idxCliente >= 0 ? (linha[idxCliente] || "") : "";
-    const data    = idxData >= 0 ? (linha[idxData] || "") : "";
-    const produtosTexto = linha[idxProdutos] || "";
+      // ---- Orçamentos: localizar TODAS as linhas desse orçamento
+      const idxNum  = headerIndex(orc.headers, "N° Orçamento","Nº Orçamento","Numero do Orçamento","Número do Orçamento","Orçamento");
+      const idxProd = headerIndex(orc.headers, "Produtos","Produto","Item");
+      const idxQtd  = headerIndex(orc.headers, "Quantidade","Qtd");
+      const idxCli  = headerIndex(orc.headers, "Cliente");
+      const idxData = headerIndex(orc.headers, "Data");
 
-    // Produtos vendidos (nome + quantidade)
-    const vendidos = parseProdutosTexto(produtosTexto);
-    if (vendidos.length === 0) {
-      statusMsg(`O orçamento ${numero} não possui produtos listados.`, "err");
-      return;
-    }
-
-    // Mostrar resumo do orçamento
-    resumoOrcEl.innerHTML = `
-      <span class="pill">Orçamento</span> <b class="mono">${numero}</b>
-      ${cliente ? ` · Cliente: <b>${cliente}</b>` : ""}
-      ${data ? ` · Data: <b>${data}</b>` : ""}
-      <div class="small">Produtos vendidos: ${vendidos.map(v => `${v.nome} (x${v.qtd})`).join(" | ")}</div>
-    `;
-
-    // Índices em EstruturaProduto
-    const pIdx = headerIndex(est.headers, "Produto", "Produto Pai", "Produto Base");
-    const iIdx = headerIndex(est.headers, "Insumo", "Material", "Peça", "Componente");
-    const qIdx = headerIndex(est.headers, "Quantidade", "Qtd", "Consumo");
-    const uIdx = headerIndex(est.headers, "Unidade", "Und", "Unid");
-
-    if (pIdx < 0 || iIdx < 0 || qIdx < 0) {
-      statusMsg(`Não encontrei as colunas esperadas na aba "EstruturaProduto" (ex.: “Produto”, “Insumo”, “Quantidade”, “Unidade”).`, "err");
-      return;
-    }
-
-    // Montar mapa de estrutura por produto (normalizado)
-    const estruturaPorProduto = new Map(); // key: produto normalizado -> [{insumo, qtd, unidade}]
-    for (const r of est.data) {
-      const prod = r[pIdx]; const insumo = r[iIdx];
-      const qtd  = parseFloat(String(r[qIdx] ?? "0").replace(",", "."));
-      const und  = uIdx >= 0 ? (r[uIdx] || "") : "";
-      if (!prod || !insumo || !qtd) continue;
-      const key = normKey(prod);
-      if (!estruturaPorProduto.has(key)) estruturaPorProduto.set(key, []);
-      estruturaPorProduto.get(key).push({ insumo: String(insumo).trim(), qtd, unidade: String(und).trim() });
-    }
-
-    // Agregar materiais (BOM consolidado)
-    const agreg = new Map(); // key: insumo|unidade -> qtd total
-    const faltantes = [];    // produtos que não encontrei na estrutura
-
-    vendidos.forEach(v => {
-      const key = normKey(v.nome);
-      const lista = estruturaPorProduto.get(key);
-      if (!lista) {
-        faltantes.push(v.nome);
+      if (idxNum<0 || idxProd<0){
+        statusMsg('Não encontrei colunas esperadas na aba "Orçamentos" (ex.: “N° Orçamento”, “Produtos”).', "err");
         return;
       }
-      lista.forEach(item => {
-        const k = item.unidade ? `${item.insumo}__${item.unidade}` : `${item.insumo}__`;
-        accAdd(agreg, k, v.qtd * item.qtd);
+      // Todas as linhas do orçamento
+      const linhas = orc.data.filter(r => String(r[idxNum]||"").trim().toUpperCase() === numero.toUpperCase());
+      if (linhas.length === 0){
+        statusMsg(`Orçamento ${numero} não encontrado na aba "Orçamentos".`, "err");
+        document.getElementById("resultado").innerHTML = "";
+        document.getElementById("resumoOrcamento").innerHTML = "";
+        document.getElementById("btnPDF").disabled = true;
+        return;
+      }
+
+      // Cliente/Data da primeira linha
+      const cliente = idxCli>=0 ? (linhas[0][idxCli]||"") : "";
+      const data    = idxData>=0 ? (linhas[0][idxData]||"") : "";
+
+      // Produtos vendidos: usa a coluna Quantidade se existir; senão, tenta (x) do texto; fallback 1
+      const vendidos = linhas.map(r=>{
+        const nome = (r[idxProd]||"").toString().trim();
+        let qtd = 1;
+        if (idxQtd>=0 && r[idxQtd]!=null){
+          const qv = parseFloat(String(r[idxQtd]).replace(",", "."));
+          qtd = isNaN(qv)? 1 : qv;
+        }else{
+          qtd = parseQtdFromProdutosCell(nome);
+        }
+        return { nome, qtd };
       });
-    });
 
-    // Renderização
-    const linhas = [];
-    agreg.forEach((qtd, k) => {
-      const [insumo, unidade] = k.split("__");
-      linhas.push({ insumo, unidade: unidade || "", quantidade: qtd });
-    });
-    // Ordena por insumo
-    linhas.sort((a,b) => a.insumo.localeCompare(b.insumo, "pt-BR"));
+      // ---- EstruturaProduto em mapa
+      const pIdx = headerIndex(est.headers, "Produto","Produto Pai","Produto Base");
+      const iIdx = headerIndex(est.headers, "Insumo","Material","Peça","Componente");
+      const qIdx = headerIndex(est.headers, "Quantidade","Qtd","Consumo");
+      const uIdx = headerIndex(est.headers, "Unidade","Und","Unid");
+      if (pIdx<0 || iIdx<0 || qIdx<0){
+        statusMsg('Não encontrei colunas esperadas na aba "EstruturaProduto" (ex.: “Produto”, “Insumo”, “Quantidade”).', "err");
+        return;
+      }
 
-    const tabela = [
-      `<table>
-        <thead>
-          <tr>
-            <th>Insumo</th>
-            <th>Unidade</th>
-            <th class="right">Quantidade Total</th>
-          </tr>
-        </thead>
-        <tbody>`,
-      ...linhas.map(l => `
-          <tr>
-            <td>${l.insumo}</td>
-            <td>${l.unidade}</td>
-            <td class="right">${fmtQty(l.quantidade)}</td>
-          </tr>`),
-      `</tbody></table>`
-    ].join("");
+      const estruturaPorProduto = new Map();
+      for (const r of est.data){
+        const prod = r[pIdx]; const insumo = r[iIdx];
+        const qtd  = parseFloat(String(r[qIdx]??"0").replace(",", "."));
+        const und  = uIdx>=0 ? (r[uIdx]||"") : "";
+        if (!prod || !insumo || !qtd) continue;
+        const key = normKey(prod);
+        if (!estruturaPorProduto.has(key)) estruturaPorProduto.set(key, []);
+        estruturaPorProduto.get(key).push({insumo:String(insumo).trim(), qtd, unidade:String(und).trim()});
+      }
 
-    const alerta = faltantes.length
-      ? `<div class="status err">Atenção: não encontrei estrutura para: <b>${faltantes.join(", ")}</b>. Verifique nomes na aba “EstruturaProduto”.</div>`
-      : "";
+      // ---- Agregar BOM
+      const agreg = new Map();  // "insumo__unidade" -> quantidade
+      const faltantes = [];
+      vendidos.forEach(v=>{
+        const key = normKey(v.nome);
+        const lista = estruturaPorProduto.get(key);
+        if (!lista){ faltantes.push(v.nome); return; }
+        lista.forEach(item=>{
+          const k = `${item.insumo}__${item.unidade||""}`;
+          const val = (agreg.get(k)||0) + v.qtd*item.qtd;
+          agreg.set(k, val);
+        });
+      });
 
-    resultadoEl.innerHTML = tabela + alerta;
-    statusMsg(`Lista de materiais gerada com sucesso (${linhas.length} itens).`, "ok");
+      // Linhas ordenadas
+      const linhasBOM = [];
+      agreg.forEach((qtd,k)=>{
+        const [insumo, unidade] = k.split("__");
+        linhasBOM.push({insumo, unidade:unidade, quantidade:qtd});
+      });
+      linhasBOM.sort((a,b)=>a.insumo.localeCompare(b.insumo,"pt-BR"));
 
-  } catch (err) {
-    console.error(err);
-    statusMsg("Erro ao ler a planilha. Verifique o compartilhamento e os nomes das abas.", "err");
-    resultadoEl.innerHTML = "";
+      // ---- Render
+      const resumo = `
+        <span class="pill">Orçamento</span> <b class="mono">${numero}</b>
+        ${cliente?` · Cliente: <b>${cliente}</b>`:""}
+        ${data?` · Data: <b>${data}</b>`:""}
+        <div class="hint">Produtos vendidos: ${
+          vendidos.map(v=>`${v.nome} (x${fmt(v.qtd).replace(",",".")})`).join(" | ")
+        }</div>
+      `;
+      document.getElementById("resumoOrcamento").innerHTML = resumo;
+
+      const tabela = [
+        `<div class="section-title">Materiais consolidados</div>`,
+        `<table>
+          <thead>
+            <tr><th>Insumo</th><th>Unidade</th><th class="right">Quantidade Total</th></tr>
+          </thead><tbody>`,
+        ...linhasBOM.map(l=>`<tr><td>${l.insumo}</td><td>${l.unidade||""}</td><td class="right">${fmt(l.quantidade)}</td></tr>`),
+        `</tbody></table>`
+      ].join("");
+
+      const alerta = faltantes.length
+        ? `<div class="status err">Atenção: produtos sem estrutura: <b>${faltantes.join(", ")}</b>.</div>`
+        : "";
+
+      document.getElementById("resultado").innerHTML = tabela + alerta;
+      statusMsg(`Lista de materiais gerada com sucesso (${linhasBOM.length} itens).`,"ok");
+
+      // Habilita PDF e guarda contexto
+      document.getElementById("btnPDF").disabled = (linhasBOM.length===0);
+      ultimoContextoPDF = { numero, cliente, data, vendidos, linhasBOM };
+
+    }catch(e){
+      console.error(e);
+      statusMsg("Erro ao ler a planilha. Verifique o compartilhamento e os nomes das abas.", "err");
+      document.getElementById("btnPDF").disabled = true;
+      document.getElementById("resultado").innerHTML = "";
+    }
   }
-}
 
-function statusMsg(msg, tipo="muted") {
-  statusEl.textContent = msg;
-  statusEl.className = `status ${tipo}`;
-}
-</script>
+  async function gerarPDF(){
+    if (!ultimoContextoPDF) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const { numero, cliente, data, vendidos, linhasBOM } = ultimoContextoPDF;
+
+    // Cabeçalho
+    doc.setFontSize(14);
+    doc.text("Liberação de Materiais (BOM)", 14, 16);
+    doc.setFontSize(11);
+    let y = 26;
+    doc.text(`Orçamento: ${numero}`, 14, y); y += 6;
+    if (cliente) { doc.text(`Cliente: ${cliente}`, 14, y); y += 6; }
+    if (data)    { doc.text(`Data: ${data}`, 14, y); y += 6; }
+    doc.setFontSize(10);
+    doc.text(`Produtos vendidos: ${vendidos.map(v=>`${v.nome} (x${v.qtd})`).join(" | ")}`, 14, y); y += 8;
+
+    // Tabela
+    const colW = [110, 30, 40]; // Insumo, Unidade, Qtd
+    const startX = 14;
+    const startY = y;
+
+    // Cabeçalho da tabela
+    doc.setFontSize(10);
+    doc.setDrawColor(200);
+    doc.setFillColor(241,244,249);
+    doc.rect(startX, startY, colW[0], 8, "F");
+    doc.rect(startX+colW[0], startY, colW[1], 8, "F");
+    doc.rect(startX+colW[0]+colW[1], startY, colW[2], 8, "F");
+    doc.setTextColor(0);
+    doc.text("Insumo", startX+2, startY+5.5);
+    doc.text("Unidade", startX+colW[0]+2, startY+5.5);
+    doc.text("Quantidade", startX+colW[0]+colW[1]+2, startY+5.5);
+
+    let cy = startY + 8;
+    doc.setFontSize(10);
+    linhasBOM.forEach(row=>{
+      if (cy > 280){ // quebra de página
+        doc.addPage();
+        cy = 16;
+      }
+      doc.rect(startX, cy, colW[0], 8);
+      doc.rect(startX+colW[0], cy, colW[1], 8);
+      doc.rect(startX+colW[0]+colW[1], cy, colW[2], 8);
+      doc.text(String(row.insumo), startX+2, cy+5.5, {maxWidth: colW[0]-4});
+      doc.text(String(row.unidade||""), startX+colW[0]+2, cy+5.5, {maxWidth: colW[1]-4});
+      doc.text(String(row.quantidade).replace(".",","), startX+colW[0]+colW[1]+2, cy+5.5, {maxWidth: colW[2]-4});
+      cy += 8;
+    });
+
+    doc.save(`Liberacao_${numero}.pdf`);
+  }
+  </script>
 </body>
 </html>
