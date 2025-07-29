@@ -1,256 +1,285 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Liberação de Materiais</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 40px;
-      background: url('inicial.jpg') no-repeat center center fixed;
-      background-size: cover;
-    }
-    .container {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 1000px;
-      margin: auto;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #999;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background-color: #333;
-      color: white;
-    }
-    .botao {
-      margin-top: 15px;
-      padding: 10px 15px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    .botao:hover {
-      background-color: #388e3c;
-    }
-    .mensagem {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input {
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 10px;
-      width: 250px;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Liberação de Materiais (BOM) – Orçamentos + EstruturaProduto</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f6f8fa; margin:0; padding:24px; }
+  .card { background:#fff; max-width:1100px; margin:0 auto; padding:18px 20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  h1 { margin:0 0 10px; font-size:20px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 0; }
+  .row > * { flex:1 1 200px; }
+  input[type="text"], button { padding:10px; border-radius:6px; border:1px solid #cfd8dc; font-size:14px; }
+  button { background:#1976d2; color:#fff; border:none; cursor:pointer; }
+  button:hover { background:#125ea3; }
+  .muted { color:#607d8b; font-size:13px; margin:6px 0 0; }
+  .status { margin:10px 0; font-size:14px; }
+  .status.ok { color:#2e7d32; }
+  .status.err { color:#c62828; }
+  table { width:100%; border-collapse:collapse; margin-top:14px; }
+  th, td { border:1px solid #e0e0e0; padding:8px; text-align:left; font-size:14px; }
+  th { background:#eceff1; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  .right { text-align:right; }
+  .small { font-size:12px; color:#607d8b; }
+  .pill { display:inline-block; padding:2px 8px; background:#e3f2fd; border-radius:999px; font-size:12px; color:#1565c0; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>🔍 Consulta de Lista de Materiais</h2>
-    <input type="text" id="numeroOrcamento" placeholder="Digite o número do orçamento" />
-    <button class="botao" onclick="gerarLista()">Gerar Lista de Materiais</button>
+  <div class="card">
+    <h1>📦 Liberação de Materiais (BOM)</h1>
+    <div class="row">
+      <div>
+        <label>Nº do Orçamento</label>
+        <input id="orcamentoInput" type="text" placeholder="Ex.: MT0012" class="mono" />
+        <div class="small">Busca na aba <b>Orçamentos</b>.</div>
+      </div>
+      <div style="flex:0 0 auto; align-self:end;">
+        <button id="btnGerar">Gerar Lista de Materiais</button>
+      </div>
+    </div>
 
-    <div id="tituloLista"></div>
+    <div id="status" class="status muted">Informe o número e clique em “Gerar Lista de Materiais”.</div>
 
-    <table id="tabelaMateriais" style="display:none;">
-      <thead>
-        <tr>
-          <th>Produto</th>
-          <th>Peça</th>
-          <th>Tipo</th>
-          <th>Comprimento (cm)</th>
-          <th>Qtd Total</th>
-          <th>Plano de Corte</th>
-          <th>Barras</th>
-          <th>Aproveitamento</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div id="resumoOrcamento" class="small"></div>
 
-    <div id="planoDeCorteAgrupado"></div>
-
-    <button class="botao" onclick="salvarNaPlanilha()">💾 Salvar na Planilha</button>
-    <button class="botao" onclick="gerarPDF()">🧾 Gerar PDF</button>
-
-    <div id="mensagem" class="mensagem"></div>
+    <div id="resultado" style="margin-top:10px;">
+      <!-- Tabelas serão inseridas aqui -->
+    </div>
   </div>
 
-  <!-- ✅ Importação do jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/** ========================
+ *  CONFIGURAÇÃO
+ *  ======================== */
+const SHEET_ID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4"; // <<< troque se necessário
+const ABA_ORCAMENTOS = "Orçamentos";        // nomes exatamente como na planilha
+const ABA_ESTRUTURA = "EstruturaProduto";
 
-  <script>
-    const { jsPDF } = window.jspdf;
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbziZ9TTcYKOx1QOsmGXUSZ5rZu9lM6XFmyNOftnt1hmUE6PBloYLDWW-5A2v705khGf/exec';
-    let listaDeMateriais = [];
+/** ========================
+ *  UTILITÁRIOS
+ *  ======================== */
 
-    function gerarLista() {
-      const numero = document.getElementById("numeroOrcamento").value.trim();
-      if (!numero) return alert("Digite o número do orçamento!");
+/** Lê uma aba via endpoint gviz e retorna {cols, rows, headers, data[]} */
+async function fetchSheet(aba) {
+  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/gviz/tq?sheet=${encodeURIComponent(aba)}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  // gviz retorna "/*O_o*/\ngoogle.visualization.Query.setResponse({...});"
+  const json = JSON.parse(text.substring(47).slice(0, -2));
+  const cols = (json.table.cols || []).map(c => (c.label || "").trim());
+  const rows = (json.table.rows || []);
+  const data = rows.map(r => (r.c || []).map(cell => (cell ? cell.v : null)));
+  return { cols, rows, headers: cols, data };
+}
 
-      fetch(`${SCRIPT_URL}?orcamento=${numero}`)
-        .then(res => res.json())
-        .then(data => {
-          listaDeMateriais = data;
-          preencherTabela(data, numero);
-          gerarPlanoDeCorteAgrupado(data);
-        });
-    }
+/** Mapa header->index, case-insensitive */
+function headerIndex(headers, ...names) {
+  const norm = s => String(s || "").trim().toLowerCase();
+  const idxMap = new Map(headers.map((h,i)=>[norm(h), i]));
+  for (const n of names) {
+    const k = norm(n);
+    if (idxMap.has(k)) return idxMap.get(k);
+  }
+  return -1;
+}
 
-    function preencherTabela(data, numero) {
-      const tabela = document.getElementById("tabelaMateriais");
-      const corpo = tabela.querySelector("tbody");
-      corpo.innerHTML = "";
+/** Remove acentos e normaliza para comparação */
+function normKey(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
 
-      document.getElementById("tituloLista").innerHTML = `<h3>Lista de Materiais do Orçamento ${numero}</h3>`;
-
-      data.forEach(item => {
-        const row = corpo.insertRow();
-        row.innerHTML = `
-          <td>${item.produto}</td>
-          <td>${item.peca}</td>
-          <td>${item.tipo}</td>
-          <td>${item.comprimento}</td>
-          <td>${item.qtdTotal}</td>
-          <td>${item.planoCorte}</td>
-          <td>${item.barrasNecessarias}</td>
-          <td>${item.aproveitamento}</td>
-        `;
-      });
-
-      tabela.style.display = "table";
-      document.getElementById("mensagem").innerText = "";
-    }
-
-    function gerarPlanoDeCorteAgrupado(data) {
-      const agrupado = {};
-
-      data.forEach(item => {
-        const codigo = item.peca;
-        const comprimento = parseFloat(item.comprimento);
-        const barra = parseFloat(item.tamanhoBarra || 600);
-        const qtd = parseFloat(item.qtdTotal);
-        const pecasPorBarra = Math.floor(barra / comprimento);
-        const barras = Math.ceil(qtd / pecasPorBarra);
-        const sobra = barra - (pecasPorBarra * comprimento);
-
-        if (!agrupado[codigo]) {
-          agrupado[codigo] = {
-            codigo,
-            barra,
-            comprimento,
-            pecasPorBarra,
-            barras,
-            sobra
-          };
-        } else {
-          agrupado[codigo].barras += barras;
-        }
-      });
-
-      let html = `<h3>Plano de Corte Agrupado</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Peça</th>
-              <th>Tam. Barra (cm)</th>
-              <th>Comprimento da Peça (cm)</th>
-              <th>Peças/Barra</th>
-              <th>Barras</th>
-              <th>Sobra (cm)</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-      for (let key in agrupado) {
-        const item = agrupado[key];
-        html += `
-          <tr>
-            <td>${item.codigo}</td>
-            <td>${item.barra.toFixed(2)}</td>
-            <td>${item.comprimento.toFixed(2)}</td>
-            <td>${item.pecasPorBarra}</td>
-            <td>${item.barras}</td>
-            <td>${item.sobra.toFixed(2)}</td>
-          </tr>`;
+/** Tenta extrair pares {nome, qtd} de um texto de produtos "A (2) | B (3m²)" etc. */
+function parseProdutosTexto(texto) {
+  if (!texto) return [];
+  return String(texto)
+    .split("|")
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(part => {
+      // "Nome ( 2,5 )" ou "Nome ( 2 )" (ignora unidade dentro dos parênteses)
+      const m = part.match(/^(.+?)\s*\(\s*([\d.,]+)\s*[a-zA-ZçÇºª%]*\s*\)$/);
+      if (m) {
+        const nome = m[1].trim();
+        const qtd = parseFloat(m[2].replace(",", "."));
+        return { nome, qtd: isNaN(qtd) ? 1 : qtd };
       }
+      // sem parênteses -> quantidade 1
+      return { nome: part, qtd: 1 };
+    });
+}
 
-      html += `</tbody></table>`;
-      document.getElementById("planoDeCorteAgrupado").innerHTML = html;
+/** Soma em um dicionário acumulador por chave */
+function accAdd(map, key, val) {
+  map.set(key, (map.get(key) || 0) + val);
+}
+
+/** Formata número com até 3 casas quando necessário */
+function fmtQty(n) {
+  const v = Number(n || 0);
+  return (Math.round(v * 1000) / 1000).toString().replace(".", ",");
+}
+
+/** Cria elemento a partir de HTML */
+function el(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html.trim();
+  return div.firstChild;
+}
+
+/** ========================
+ *  LÓGICA PRINCIPAL
+ *  ======================== */
+
+const statusEl = document.getElementById("status");
+const resultadoEl = document.getElementById("resultado");
+const resumoOrcEl = document.getElementById("resumoOrcamento");
+document.getElementById("btnGerar").addEventListener("click", gerarLista);
+
+async function gerarLista() {
+  const numero = (document.getElementById("orcamentoInput").value || "").trim();
+  if (!numero) {
+    statusMsg("Digite o número do orçamento.", "err");
+    return;
+  }
+
+  try {
+    statusMsg("Carregando dados do orçamento…", "muted");
+    const [orc, est] = await Promise.all([
+      fetchSheet(ABA_ORCAMENTOS),
+      fetchSheet(ABA_ESTRUTURA)
+    ]);
+
+    // Identificar colunas em Orçamentos
+    const idxNum = headerIndex(orc.headers, "N° Orçamento", "Nº Orçamento", "Numero do Orçamento", "Número do Orçamento", "Orçamento");
+    const idxProdutos = headerIndex(orc.headers, "Produtos", "Itens", "Lista de Produtos");
+    const idxCliente  = headerIndex(orc.headers, "Cliente");
+    const idxData     = headerIndex(orc.headers, "Data");
+
+    if (idxNum < 0 || idxProdutos < 0) {
+      statusMsg("Não encontrei as colunas esperadas na aba 'Orçamentos' (ex.: “N° Orçamento”, “Produtos”).", "err");
+      return;
     }
 
-    function salvarNaPlanilha() {
-      if (listaDeMateriais.length === 0) {
-        alert("Gere uma lista antes de salvar!");
+    // Localizar a linha do orçamento
+    const linha = orc.data.find(r => String(r[idxNum] || "").trim().toUpperCase() === numero.toUpperCase());
+    if (!linha) {
+      statusMsg(`Orçamento ${numero} não encontrado na aba "Orçamentos".`, "err");
+      resultadoEl.innerHTML = "";
+      resumoOrcEl.innerHTML = "";
+      return;
+    }
+
+    const cliente = idxCliente >= 0 ? (linha[idxCliente] || "") : "";
+    const data    = idxData >= 0 ? (linha[idxData] || "") : "";
+    const produtosTexto = linha[idxProdutos] || "";
+
+    // Produtos vendidos (nome + quantidade)
+    const vendidos = parseProdutosTexto(produtosTexto);
+    if (vendidos.length === 0) {
+      statusMsg(`O orçamento ${numero} não possui produtos listados.`, "err");
+      return;
+    }
+
+    // Mostrar resumo do orçamento
+    resumoOrcEl.innerHTML = `
+      <span class="pill">Orçamento</span> <b class="mono">${numero}</b>
+      ${cliente ? ` · Cliente: <b>${cliente}</b>` : ""}
+      ${data ? ` · Data: <b>${data}</b>` : ""}
+      <div class="small">Produtos vendidos: ${vendidos.map(v => `${v.nome} (x${v.qtd})`).join(" | ")}</div>
+    `;
+
+    // Índices em EstruturaProduto
+    const pIdx = headerIndex(est.headers, "Produto", "Produto Pai", "Produto Base");
+    const iIdx = headerIndex(est.headers, "Insumo", "Material", "Peça", "Componente");
+    const qIdx = headerIndex(est.headers, "Quantidade", "Qtd", "Consumo");
+    const uIdx = headerIndex(est.headers, "Unidade", "Und", "Unid");
+
+    if (pIdx < 0 || iIdx < 0 || qIdx < 0) {
+      statusMsg(`Não encontrei as colunas esperadas na aba "EstruturaProduto" (ex.: “Produto”, “Insumo”, “Quantidade”, “Unidade”).`, "err");
+      return;
+    }
+
+    // Montar mapa de estrutura por produto (normalizado)
+    const estruturaPorProduto = new Map(); // key: produto normalizado -> [{insumo, qtd, unidade}]
+    for (const r of est.data) {
+      const prod = r[pIdx]; const insumo = r[iIdx];
+      const qtd  = parseFloat(String(r[qIdx] ?? "0").replace(",", "."));
+      const und  = uIdx >= 0 ? (r[uIdx] || "") : "";
+      if (!prod || !insumo || !qtd) continue;
+      const key = normKey(prod);
+      if (!estruturaPorProduto.has(key)) estruturaPorProduto.set(key, []);
+      estruturaPorProduto.get(key).push({ insumo: String(insumo).trim(), qtd, unidade: String(und).trim() });
+    }
+
+    // Agregar materiais (BOM consolidado)
+    const agreg = new Map(); // key: insumo|unidade -> qtd total
+    const faltantes = [];    // produtos que não encontrei na estrutura
+
+    vendidos.forEach(v => {
+      const key = normKey(v.nome);
+      const lista = estruturaPorProduto.get(key);
+      if (!lista) {
+        faltantes.push(v.nome);
         return;
       }
-
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(listaDeMateriais),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(res => res.text())
-      .then(msg => {
-        document.getElementById("mensagem").innerText = msg;
-      })
-      .catch(() => {
-        document.getElementById("mensagem").innerText = "Erro ao salvar na planilha.";
+      lista.forEach(item => {
+        const k = item.unidade ? `${item.insumo}__${item.unidade}` : `${item.insumo}__`;
+        accAdd(agreg, k, v.qtd * item.qtd);
       });
-    }
+    });
 
-    function gerarPDF() {
-      const pdf = new jsPDF();
-      const titulo = document.getElementById("tituloLista").innerText;
-      const rows = [...document.querySelectorAll("table tr")].map(tr =>
-        [...tr.querySelectorAll("th, td")].map(td => td.innerText)
-      );
+    // Renderização
+    const linhas = [];
+    agreg.forEach((qtd, k) => {
+      const [insumo, unidade] = k.split("__");
+      linhas.push({ insumo, unidade: unidade || "", quantidade: qtd });
+    });
+    // Ordena por insumo
+    linhas.sort((a,b) => a.insumo.localeCompare(b.insumo, "pt-BR"));
 
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text(titulo, 14, 20);
+    const tabela = [
+      `<table>
+        <thead>
+          <tr>
+            <th>Insumo</th>
+            <th>Unidade</th>
+            <th class="right">Quantidade Total</th>
+          </tr>
+        </thead>
+        <tbody>`,
+      ...linhas.map(l => `
+          <tr>
+            <td>${l.insumo}</td>
+            <td>${l.unidade}</td>
+            <td class="right">${fmtQty(l.quantidade)}</td>
+          </tr>`),
+      `</tbody></table>`
+    ].join("");
 
-      const startY = 30;
-      const rowHeight = 10;
-      const colWidths = [25, 25, 25, 30, 25, 30, 25, 40];
-      let y = startY;
+    const alerta = faltantes.length
+      ? `<div class="status err">Atenção: não encontrei estrutura para: <b>${faltantes.join(", ")}</b>. Verifique nomes na aba “EstruturaProduto”.</div>`
+      : "";
 
-      rows.forEach((row, i) => {
-        let x = 14;
-        pdf.setFont("helvetica", i === 0 ? "bold" : "normal");
+    resultadoEl.innerHTML = tabela + alerta;
+    statusMsg(`Lista de materiais gerada com sucesso (${linhas.length} itens).`, "ok");
 
-        row.forEach((cell, j) => {
-          pdf.rect(x, y, colWidths[j], rowHeight);
-          pdf.setFontSize(10);
-          pdf.text(String(cell), x + 2, y + 7, { maxWidth: colWidths[j] - 4 });
-          x += colWidths[j];
-        });
+  } catch (err) {
+    console.error(err);
+    statusMsg("Erro ao ler a planilha. Verifique o compartilhamento e os nomes das abas.", "err");
+    resultadoEl.innerHTML = "";
+  }
+}
 
-        y += rowHeight;
-
-        if (y > 270) {
-          pdf.addPage();
-          y = startY;
-        }
-      });
-
-      pdf.save("Lista_de_Materiais.pdf");
-    }
-  </script>
+function statusMsg(msg, tipo="muted") {
+  statusEl.textContent = msg;
+  statusEl.className = `status ${tipo}`;
+}
+</script>
 </body>
 </html>
