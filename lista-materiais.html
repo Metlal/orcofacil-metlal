@@ -183,7 +183,7 @@ async function gerarLista(){
     const pIdx = headerIndex(est.headers, "Produto");
     const iIdx = headerIndex(est.headers, "Insumo");
     const qIdx = headerIndex(est.headers, "Quantidade");
-    const uIdx = headerIndex(est.headers, "Unidade");
+    const uIdx = headerIndex(est.headers, "Medidas");
     if (pIdx<0 || iIdx<0 || qIdx<0){
       statusMsg('Colunas obrigatórias não encontradas na aba <b>EstruturaProduto</b>.', "err");
       return;
