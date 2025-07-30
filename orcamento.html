@@ -8,55 +8,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
-    body, input, select, button {
-      font-family: 'Inter', sans-serif;
-    }
-    .container {
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #ccc;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 8px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    .total {
-      font-weight: bold;
-      color: green;
-    }
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .row select, .row input, .row button {
-      flex: 1;
-    }
-    .medidas {
-      display: none;
-    }
-    #previewDesenho {
-      margin-top: 10px;
-      border: 1px dashed #999;
-      padding: 10px;
-      text-align: center;
-      background: #f9f9f9;
-    }
+    body, input, select, button { font-family: 'Inter', sans-serif; }
+    .container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px #ccc; }
+    input, select, button { width: 100%; padding: 8px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .total { font-weight: bold; color: green; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .row select, .row input, .row button { flex: 1; }
+    .medidas { display: none; }
+    #previewDesenho { margin-top: 10px; border: 1px dashed #999; padding: 10px; text-align: center; background: #f9f9f9; }
   </style>
 </head>
 <body>
@@ -158,7 +119,7 @@
     </svg>`;
   }
 
-  // Função para formatar número em Real Brasileiro
+  // Formatação em BRL
   function formatarReal(valor) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
   }
@@ -238,28 +199,43 @@
     atualizarLista();
   }
 
+  // >>> NOVO: salva linhas na aba "Orçamentos"
+  function salvarNaAbaOrcamentos(linhas) {
+    return fetch(webAppURL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo: "salvarOrcamentos",
+        aba: "Orçamentos",
+        linhas // array de objetos: {numero, produto, quantidade, cliente, data, status, usuario}
+      })
+    }).then(r => r.text());
+  }
+
   function gerarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  doc.setFontSize(14);
-  doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
-  doc.setFontSize(11);
-  doc.text(`Cliente: ${cliente.value}`, 10, 30);
-  doc.text(`Orçamento: ${numero.value}`, 10, 36);
-  doc.text(`Data: ${data.value}`, 10, 42);
+    if (!cliente.value) { alert("Informe o cliente."); return; }
+    if (!lista.length) { alert("Adicione pelo menos um item ao orçamento."); return; }
 
-  let total = 0;
-  const body = lista.map(item => {
-    total += item.subtotal;
-    return [item.nome, `${item.qtd} ${item.unidade}`, formatarReal(item.preco), formatarReal(item.subtotal)];
-  });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text("Orçamento - METLAL", 105, 20, { align: "center" });
+    doc.setFontSize(11);
+    doc.text(`Cliente: ${cliente.value}`, 10, 30);
+    doc.text(`Orçamento: ${numero.value}`, 10, 36);
+    doc.text(`Data: ${data.value}`, 10, 42);
 
-  doc.autoTable({ startY: 50, head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]], body });
-  const finalY = doc.lastAutoTable.finalY + 10;
-  doc.text(`Total: ${formatarReal(total)}`, 10, finalY);
+    let total = 0;
+    const body = lista.map(item => {
+      total += item.subtotal;
+      return [item.nome, `${item.qtd} ${item.unidade}`, formatarReal(item.preco), formatarReal(item.subtotal)];
+    });
 
-  // 🔽 Adicionando texto extra no PDF
-  const textoFinal = `
+    doc.autoTable({ startY: 50, head: [["Produto", "Quantidade", "Preço Unitário", "Subtotal"]], body });
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.text(`Total: ${formatarReal(total)}`, 10, finalY);
+
+    const textoFinal = `
 VALOR TOTAL: ${formatarReal(total)}
 
 CONDIÇÕES DE PAGAMENTO:
@@ -273,28 +249,27 @@ VALIDADE DA PROPOSTA: 15 dias
 
 Atenciosamente,
 `;
+    const linhasTexto = doc.splitTextToSize(textoFinal.trim(), 180);
+    doc.text(linhasTexto, 10, finalY + 10);
 
-  const linhasTexto = doc.splitTextToSize(textoFinal.trim(), 180);
-  doc.text(linhasTexto, 10, finalY + 10);
+    doc.save(`${numero.value}.pdf`);
 
-  doc.save(`${numero.value}.pdf`);
-
-  const produtosTexto = lista.map(item => `${item.nome} (${item.qtd} ${item.unidade})`).join(" | ");
-  fetch(webAppURL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      tipo: "salvar",
+    // >>> NOVO: monta as linhas no formato da aba "Orçamentos"
+    const linhas = lista.map(item => ({
       numero: numero.value,
-      cliente: cliente.value,
+      produto: item.nome,
+      quantidade: item.qtd,
+      cliente: cliente.value || "",
       data: data.value,
-      produtos: produtosTexto,
-      total: total.toFixed(2),
       status: "Pendente",
       usuario: "admin"
-    })
-  }).then(r => r.text()).then(res => alert(res)).catch(err => alert("Erro ao salvar: " + err.message));
-}
+    }));
+
+    // Salva na planilha
+    salvarNaAbaOrcamentos(linhas)
+      .then(msg => alert(msg || "Orçamento salvo na aba Orçamentos."))
+      .catch(err => alert("Erro ao salvar na aba Orçamentos: " + err.message));
+  }
 
   carregarProdutos();
   gerarNumero();
