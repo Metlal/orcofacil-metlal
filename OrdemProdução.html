@@ -1,3 +1,4 @@
+<!-- Substitua TODO o seu HTML por este abaixo -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -60,10 +61,20 @@
     <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
 
     <div id="orderInfo"></div>
+
     <table id="orderTable" style="display:none;">
       <thead>
         <tr>
           <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <table id="materialTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Insumo</th><th>Comprimento da Peça (cm)</th><th>Tamanho da Barra (cm)</th><th>Quantidade de Peças</th><th>Total de Barras</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -112,7 +123,51 @@
           });
 
           document.getElementById('orderTable').style.display = 'table';
+          generateMaterialList();
         });
+    }
+
+    function generateMaterialList() {
+      const materiais = {};
+      orderData.forEach(item => {
+        const insumo = item.insumo;
+        const comprimento = Number(item.comprimento);
+        const tamanhoBarra = Number(item.tamanhoBarra);
+        const quantidade = Number(item.quantidade);
+
+        if (!insumo || !comprimento || !tamanhoBarra || !quantidade) return;
+
+        const totalUsado = comprimento * quantidade;
+        const totalBarras = Math.ceil(totalUsado / tamanhoBarra);
+
+        if (!materiais[insumo]) {
+          materiais[insumo] = {
+            insumo,
+            comprimento,
+            tamanhoBarra,
+            quantidadeTotal: 0,
+            barras: 0
+          };
+        }
+
+        materiais[insumo].quantidadeTotal += quantidade;
+        materiais[insumo].barras += totalBarras;
+      });
+
+      const tbody = document.querySelector('#materialTable tbody');
+      tbody.innerHTML = '';
+      Object.values(materiais).forEach(mat => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${mat.insumo}</td>
+          <td>${mat.comprimento}</td>
+          <td>${mat.tamanhoBarra}</td>
+          <td>${mat.quantidadeTotal}</td>
+          <td>${mat.barras}</td>
+        `;
+      });
+
+      document.getElementById('materialTable').style.display = 'table';
     }
 
     function saveOrder() {
@@ -136,79 +191,34 @@
     }
 
     function generatePDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape' });
-  let y = 20;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+      let y = 20;
 
-  const cliente = orderData[0].cliente;
-  const pedido = orderData[0].pedido;
-  const responsavel = document.getElementById("responsavel").value;
-  const ordem = orderData[0].numeroOrdem;
+      const cliente = orderData[0].cliente;
+      const pedido = orderData[0].pedido;
+      const responsavel = document.getElementById("responsavel").value;
+      const ordem = orderData[0].numeroOrdem;
 
-  doc.setFontSize(12);
-doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
-doc.text(`Cliente: ${orderData[0].cliente}`, 14, y + 8);
-doc.text(`Nº do Pedido: ${document.getElementById('orcamento').value.trim()}`, 14, y + 16);
-doc.text(`Responsável: ${responsavel}`, 14, y + 24);
+      doc.setFontSize(12);
+      doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
+      doc.text(`Cliente: ${cliente}`, 14, y + 8);
+      doc.text(`Nº do Pedido: ${document.getElementById('orcamento').value.trim()}`, 14, y + 16);
+      doc.text(`Responsável: ${responsavel}`, 14, y + 24);
 
-  const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
-  doc.text(`Total de Peças: ${totalPecas}`, 14, y + 32);
+      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 32);
 
-  // 🔁 Subtotais de produtos com soma de unidades vendidas
-  const produtosVendidos = {};
-  const pedidoAtual = pedido;
+      let subY = y + 42;
+      doc.text('Subtotal de Produtos:', 14, subY);
+      let produtos = {};
+      orderData.forEach(i => produtos[i.produto] = (produtos[i.produto] || 0) + 1);
+      Object.entries(produtos).forEach(([prod, qtd]) => {
+        subY += 8;
+        doc.text(`- ${prod}: ${qtd} unidade(s)`, 18, subY);
+      });
 
-  // Reagrupa por produto somando quantidade de unidades vendidas
-  orderData.forEach(item => {
-    const produto = item.produto;
-    if (!produtosVendidos[produto]) {
-      produtosVendidos[produto] = 0;
-    }
-    produtosVendidos[produto] += 1; // ou item.quantidadeProduto, se tiver
-  });
-
-  let subY = y + 42;
-  doc.text('Subtotal de Produtos:', 14, subY);
-  Object.entries(produtosVendidos).forEach(([produto, quantidade]) => {
-    subY += 8;
-    doc.text(`- ${produto}: ${quantidade} unidade(s)`, 18, subY);
-  });
-
-  y = subY + 10;
-
-  const headers = [["Produto", "Peça", "Tipo", "Comprimento", "Quantidade", "Descrição"]];
-  const rows = orderData.map(d => [d.produto, d.peca, d.tipo, d.comprimento, d.quantidade, d.descricao || '']);
-
-  headers.concat(rows).forEach((r, i) => {
-    let x = 14;
-    r.forEach((cell, j) => {
-      doc.rect(x, y, 45, 10);
-      doc.text(String(cell), x + 1, y + 7);
-      x += 45;
-    });
-    y += 10;
-  });
-
-  y += 20;
-  doc.text("__________________________", 30, y);
-  doc.text("__________________________", 180, y);
-  doc.text("Resp. Produção", 40, y + 8);
-  doc.text("Conferido por", 190, y + 8);
-
-  doc.save(`Ordem_${ordem}.pdf`);
-}
-
-    function resetForm() {
-      orderData = [];
-      orderNumber = '';
-      pedidoNumber = '';
-      document.getElementById('orcamento').value = '';
-      document.getElementById('responsavel').value = '';
-      document.getElementById('orderInfo').innerHTML = '';
-      document.getElementById('summary').innerHTML = '';
-      document.querySelector('#orderTable tbody').innerHTML = '';
-      document.getElementById('orderTable').style.display = 'none';
-      document.getElementById('mensagem').innerText = '';
+      doc.save(`Ordem_${ordem}.pdf`);
     }
   </script>
 </body>
