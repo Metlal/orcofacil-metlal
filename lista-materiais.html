@@ -1,135 +1,124 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <title>Liberação de Materiais (BOM)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f9fc;
-      padding: 20px;
-    }
-    .container {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    h2 {
-      margin-top: 0;
-    }
-    input, button {
-      padding: 8px;
-      margin: 10px 0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f0f0f0;
-    }
-    .badge {
-      background: #e0e0e0;
-      padding: 3px 8px;
-      border-radius: 5px;
-      font-size: 0.9em;
-      margin-right: 5px;
-    }
-    .success {
-      color: green;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>📦 Liberação de Materiais (BOM)</h2>
-    <label for="orcamentoInput">Nº do Orçamento</label>
-    <input type="text" id="orcamentoInput" placeholder="Ex: MT0001" />
-    <button onclick="gerarLista()">Gerar Lista de Materiais</button>
-    <div id="info"></div>
-    <div id="resultado"></div>
-  </div>
-
-  <script>
-    async function gerarLista() {
-      const orcamento = document.getElementById("orcamentoInput").value.trim();
-      const infoDiv = document.getElementById("info");
-      const resultadoDiv = document.getElementById("resultado");
-
-      infoDiv.innerHTML = "";
-      resultadoDiv.innerHTML = "";
-
-      if (!orcamento) {
-        alert("Digite o número do orçamento.");
-        return;
+<html>
+  <head>
+    <base target="_top" />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f8f9fa;
       }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      label {
+        margin-right: 10px;
+      }
+      input[type="text"] {
+        padding: 5px;
+        margin-right: 10px;
+      }
+      button {
+        padding: 6px 12px;
+        cursor: pointer;
+        background-color: #007bff;
+        border: none;
+        color: white;
+        border-radius: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #007bff;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>📦 Liberação de Materiais (BOM)</h2>
+      <label for="orcamento">Nº do Orçamento</label>
+      <input type="text" id="orcamento" placeholder="Ex: MT0009" />
+      <button onclick="gerarListaMateriais()">Gerar Lista de Materiais</button>
+      <div id="resultado"></div>
+    </div>
 
-      try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec?orcamento=" + encodeURIComponent(orcamento));
-        const data = await res.json();
+    <script>
+      async function gerarListaMateriais() {
+        const orcamento = document.getElementById("orcamento").value.trim();
+        const resultadoDiv = document.getElementById("resultado");
+        resultadoDiv.innerHTML = "Buscando dados...";
 
-        if (!data || !data.materiais || data.materiais.length === 0) {
-          resultadoDiv.innerHTML = "<p>Nenhum material encontrado.</p>";
-          return;
-        }
+        try {
+          const response = await fetch(
+            "https://script.google.com/macros/s/AKfycbxse_rOXIAZrMDrr5U3tWzCBJUy-yTkL6DQU1O8uG5xJwxds3l8VDISL9vKVbeUSxUy/exec?orcamento=" +
+              encodeURIComponent(orcamento)
+          );
+          const data = await response.json();
 
-        const cliente = data.cliente || "Cliente não informado";
-        const produtos = data.produtos || [];
-
-        infoDiv.innerHTML = `
-          <span class="badge">Orçamento</span> <strong>${orcamento}</strong> - Cliente: ${cliente}<br>
-          Produtos vendidos: ${produtos.map(p => `${p.nome} (x${p.quantidade})`).join(', ')}
-          <p class="success">Lista de materiais gerada com sucesso (${data.materiais.length} itens).</p>
-        `;
-
-        const tabela = document.createElement("table");
-        tabela.innerHTML = `
-          <tr>
-            <th>Insumo</th>
-            <th>Unidade</th>
-            <th>Quantidade Total</th>
-            <th>Qtde de Barras (6m)</th>
-          </tr>
-        `;
-
-        data.materiais.forEach(mat => {
-          const unidade = (mat.unidade || "").toLowerCase();
-          const qtdeTotal = parseFloat(mat.quantidade_total) || 0;
-
-          let textoBarras = "-";
-
-          // Aplica cálculo apenas para unidades de comprimento
-          const unidadesValidas = ["m", "metro", "metros"];
-          if (unidadesValidas.includes(unidade) && qtdeTotal > 0) {
-            const barras = Math.ceil(qtdeTotal / 6);
-            textoBarras = `${barras} barra${barras > 1 ? 's' : ''} de 6m`;
+          if (!data || data.length === 0) {
+            resultadoDiv.innerHTML = "Nenhum dado encontrado para este orçamento.";
+            return;
           }
 
-          const linha = `
-            <tr>
-              <td>${mat.insumo}</td>
-              <td>${mat.unidade}</td>
-              <td>${qtdeTotal}</td>
-              <td>${textoBarras}</td>
-            </tr>
+          let html = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Descrição</th>
+                  <th>Qtd Peças</th>
+                  <th>Comp. por Peça (mm)</th>
+                  <th>Barra Padrão (mm)</th>
+                  <th>Barras Necessárias</th>
+                </tr>
+              </thead>
+              <tbody>
           `;
-          tabela.innerHTML += linha;
-        });
 
-        resultadoDiv.appendChild(tabela);
+          data.forEach((item, index) => {
+            const qtdPecas = parseFloat(item.quantidade || 0);
+            const compPeca = parseFloat(item.comprimento || 0); // mm
+            const barraPadrao = parseFloat(item.barraPadrao || 6000); // mm (6 metros padrão)
 
-      } catch (erro) {
-        console.error("Erro:", erro);
-        resultadoDiv.innerHTML = "<p>Erro ao buscar dados.</p>";
+            const totalComprimento = qtdPecas * compPeca;
+            const barrasNecessarias = Math.ceil(totalComprimento / barraPadrao);
+
+            html += `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${item.descricao || "-"}</td>
+                <td>${qtdPecas}</td>
+                <td>${compPeca}</td>
+                <td>${barraPadrao}</td>
+                <td>${barrasNecessarias}</td>
+              </tr>
+            `;
+          });
+
+          html += "</tbody></table>";
+          resultadoDiv.innerHTML = html;
+        } catch (error) {
+          resultadoDiv.innerHTML = "Erro ao buscar dados.";
+          console.error("Erro:", error);
+        }
       }
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
