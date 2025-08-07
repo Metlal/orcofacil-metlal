@@ -1,285 +1,225 @@
+<!-- Substitua TODO o seu HTML por este abaixo -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Liberação de Materiais (BOM) – Orçamentos + EstruturaProduto</title>
-<style>
-  body { font-family: Arial, sans-serif; background:#f6f8fa; margin:0; padding:24px; }
-  .card { background:#fff; max-width:1100px; margin:0 auto; padding:18px 20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
-  h1 { margin:0 0 10px; font-size:20px; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; margin:10px 0 0; }
-  .row > * { flex:1 1 200px; }
-  input[type="text"], button { padding:10px; border-radius:6px; border:1px solid #cfd8dc; font-size:14px; }
-  button { background:#1976d2; color:#fff; border:none; cursor:pointer; }
-  button:hover { background:#125ea3; }
-  .muted { color:#607d8b; font-size:13px; margin:6px 0 0; }
-  .status { margin:10px 0; font-size:14px; }
-  .status.ok { color:#2e7d32; }
-  .status.err { color:#c62828; }
-  table { width:100%; border-collapse:collapse; margin-top:14px; }
-  th, td { border:1px solid #e0e0e0; padding:8px; text-align:left; font-size:14px; }
-  th { background:#eceff1; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-  .right { text-align:right; }
-  .small { font-size:12px; color:#607d8b; }
-  .pill { display:inline-block; padding:2px 8px; background:#e3f2fd; border-radius:999px; font-size:12px; color:#1565c0; }
-</style>
+  <meta charset="UTF-8" />
+  <title>Ordem de Produção</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: #f4f4f4;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 1000px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #333;
+      color: white;
+    }
+    .botao {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .botao:hover {
+      background-color: #1976D2;
+    }
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px 0;
+      width: 250px;
+    }
+  </style>
 </head>
 <body>
-  <div class="card">
-    <h1>📦 Liberação de Materiais (BOM)</h1>
-    <div class="row">
-      <div>
-        <label>Nº do Orçamento</label>
-        <input id="orcamentoInput" type="text" placeholder="Ex.: MT0012" class="mono" />
-        <div class="small">Busca na aba <b>Orçamentos</b>.</div>
-      </div>
-      <div style="flex:0 0 auto; align-self:end;">
-        <button id="btnGerar">Gerar Lista de Materiais</button>
-      </div>
-    </div>
+  <div class="container">
+    <h2>✍️ Gerar Ordem de Produção</h2>
+    <input type="text" id="orcamento" placeholder="Nº do Orçamento" />
+    <input type="text" id="responsavel" placeholder="Responsável" />
+    <button class="botao" onclick="generateOrder()">Gerar Ordem</button>
 
-    <div id="status" class="status muted">Informe o número e clique em “Gerar Lista de Materiais”.</div>
+    <div id="orderInfo"></div>
 
-    <div id="resumoOrcamento" class="small"></div>
+    <table id="orderTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Produto</th><th>Peça</th><th>Tipo</th><th>Comprimento</th><th>Quantidade</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-    <div id="resultado" style="margin-top:10px;">
-      <!-- Tabelas serão inseridas aqui -->
-    </div>
+    <table id="materialTable" style="display:none;">
+      <thead>
+        <tr>
+          <th>Insumo</th><th>Comprimento da Peça (cm)</th><th>Tamanho da Barra (cm)</th><th>Quantidade de Peças</th><th>Total de Barras</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button class="botao" onclick="saveOrder()">💾 Salvar Ordem</button>
+    <button class="botao" onclick="generatePDF()">🧾 Gerar PDF</button>
+
+    <div id="message"></div>
   </div>
 
-<script>
-/** ========================
- *  CONFIGURAÇÃO
- *  ======================== */
-const SHEET_ID = "1AVl3zXYmlR0Jr7LpZlMVf28EnpZYMQj1hRU5VUbfcA4"; // <<< troque se necessário
-const ABA_ORCAMENTOS = "Orçamentos";        // nomes exatamente como na planilha
-const ABA_ESTRUTURA = "EstruturaProduto";
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwsPb17NgbgDczYsH8J7sDa010LQjBBe81Ed1kr_eE1ey_g6znULxVRHQ6wXeFCf-gb/exec';
+    let orderData = [];
+    let orderNumber = '';
 
-/** ========================
- *  UTILITÁRIOS
- *  ======================== */
+    function generateOrder() {
+      const orc = document.getElementById('orcamento').value.trim();
+      const resp = document.getElementById('responsavel').value.trim();
+      if (!orc || !resp) return alert('Preencha todos os campos');
 
-/** Lê uma aba via endpoint gviz e retorna {cols, rows, headers, data[]} */
-async function fetchSheet(aba) {
-  const url = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(SHEET_ID)}/gviz/tq?sheet=${encodeURIComponent(aba)}`;
-  const res = await fetch(url);
-  const text = await res.text();
-  // gviz retorna "/*O_o*/\ngoogle.visualization.Query.setResponse({...});"
-  const json = JSON.parse(text.substring(47).slice(0, -2));
-  const cols = (json.table.cols || []).map(c => (c.label || "").trim());
-  const rows = (json.table.rows || []);
-  const data = rows.map(r => (r.c || []).map(cell => (cell ? cell.v : null)));
-  return { cols, rows, headers: cols, data };
-}
+      fetch(`${SCRIPT_URL}?orcamento=${orc}&acao=ordem&responsavel=${encodeURIComponent(resp)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data.length) return alert('Nenhum dado encontrado.');
 
-/** Mapa header->index, case-insensitive */
-function headerIndex(headers, ...names) {
-  const norm = s => String(s || "").trim().toLowerCase();
-  const idxMap = new Map(headers.map((h,i)=>[norm(h), i]));
-  for (const n of names) {
-    const k = norm(n);
-    if (idxMap.has(k)) return idxMap.get(k);
-  }
-  return -1;
-}
+          orderData = data;
+          orderNumber = data[0].numeroOrdem;
 
-/** Remove acentos e normaliza para comparação */
-function normKey(s) {
-  return String(s || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "");
-}
+          document.getElementById('orderInfo').innerHTML = `
+            <h3>Ordem: ${orderNumber} | Cliente: ${data[0].cliente} | Responsável: ${resp}</h3>
+          `;
 
-/** Tenta extrair pares {nome, qtd} de um texto de produtos "A (2) | B (3m²)" etc. */
-function parseProdutosTexto(texto) {
-  if (!texto) return [];
-  return String(texto)
-    .split("|")
-    .map(s => s.trim())
-    .filter(Boolean)
-    .map(part => {
-      // "Nome ( 2,5 )" ou "Nome ( 2 )" (ignora unidade dentro dos parênteses)
-      const m = part.match(/^(.+?)\s*\(\s*([\d.,]+)\s*[a-zA-ZçÇºª%]*\s*\)$/);
-      if (m) {
-        const nome = m[1].trim();
-        const qtd = parseFloat(m[2].replace(",", "."));
-        return { nome, qtd: isNaN(qtd) ? 1 : qtd };
-      }
-      // sem parênteses -> quantidade 1
-      return { nome: part, qtd: 1 };
-    });
-}
+          const tbody = document.querySelector('#orderTable tbody');
+          tbody.innerHTML = '';
+          data.forEach(item => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+              <td>${item.produto}</td>
+              <td>${item.peca}</td>
+              <td>${item.tipo}</td>
+              <td>${item.comprimento}</td>
+              <td>${item.quantidade}</td>
+            `;
+          });
 
-/** Soma em um dicionário acumulador por chave */
-function accAdd(map, key, val) {
-  map.set(key, (map.get(key) || 0) + val);
-}
-
-/** Formata número com até 3 casas quando necessário */
-function fmtQty(n) {
-  const v = Number(n || 0);
-  return (Math.round(v * 1000) / 1000).toString().replace(".", ",");
-}
-
-/** Cria elemento a partir de HTML */
-function el(html) {
-  const div = document.createElement("div");
-  div.innerHTML = html.trim();
-  return div.firstChild;
-}
-
-/** ========================
- *  LÓGICA PRINCIPAL
- *  ======================== */
-
-const statusEl = document.getElementById("status");
-const resultadoEl = document.getElementById("resultado");
-const resumoOrcEl = document.getElementById("resumoOrcamento");
-document.getElementById("btnGerar").addEventListener("click", gerarLista);
-
-async function gerarLista() {
-  const numero = (document.getElementById("orcamentoInput").value || "").trim();
-  if (!numero) {
-    statusMsg("Digite o número do orçamento.", "err");
-    return;
-  }
-
-  try {
-    statusMsg("Carregando dados do orçamento…", "muted");
-    const [orc, est] = await Promise.all([
-      fetchSheet(ABA_ORCAMENTOS),
-      fetchSheet(ABA_ESTRUTURA)
-    ]);
-
-    // Identificar colunas em Orçamentos
-    const idxNum = headerIndex(orc.headers, "N° Orçamento", "Nº Orçamento", "Numero do Orçamento", "Número do Orçamento", "Orçamento");
-    const idxProdutos = headerIndex(orc.headers, "Produtos", "Itens", "Lista de Produtos");
-    const idxCliente  = headerIndex(orc.headers, "Cliente");
-    const idxData     = headerIndex(orc.headers, "Data");
-
-    if (idxNum < 0 || idxProdutos < 0) {
-      statusMsg("Não encontrei as colunas esperadas na aba 'Orçamentos' (ex.: “N° Orçamento”, “Produtos”).", "err");
-      return;
+          document.getElementById('orderTable').style.display = 'table';
+          generateMaterialList();
+        });
     }
 
-    // Localizar a linha do orçamento
-    const linha = orc.data.find(r => String(r[idxNum] || "").trim().toUpperCase() === numero.toUpperCase());
-    if (!linha) {
-      statusMsg(`Orçamento ${numero} não encontrado na aba "Orçamentos".`, "err");
-      resultadoEl.innerHTML = "";
-      resumoOrcEl.innerHTML = "";
-      return;
-    }
+    function generateMaterialList() {
+      const materiais = {};
+      orderData.forEach(item => {
+        const insumo = item.insumo;
+        const comprimento = Number(item.comprimento);
+        const tamanhoBarra = Number(item.tamanhoBarra);
+        const quantidade = Number(item.quantidade);
 
-    const cliente = idxCliente >= 0 ? (linha[idxCliente] || "") : "";
-    const data    = idxData >= 0 ? (linha[idxData] || "") : "";
-    const produtosTexto = linha[idxProdutos] || "";
+        if (!insumo || !comprimento || !tamanhoBarra || !quantidade) return;
 
-    // Produtos vendidos (nome + quantidade)
-    const vendidos = parseProdutosTexto(produtosTexto);
-    if (vendidos.length === 0) {
-      statusMsg(`O orçamento ${numero} não possui produtos listados.`, "err");
-      return;
-    }
+        const totalUsado = comprimento * quantidade;
+        const totalBarras = Math.ceil(totalUsado / tamanhoBarra);
 
-    // Mostrar resumo do orçamento
-    resumoOrcEl.innerHTML = `
-      <span class="pill">Orçamento</span> <b class="mono">${numero}</b>
-      ${cliente ? ` · Cliente: <b>${cliente}</b>` : ""}
-      ${data ? ` · Data: <b>${data}</b>` : ""}
-      <div class="small">Produtos vendidos: ${vendidos.map(v => `${v.nome} (x${v.qtd})`).join(" | ")}</div>
-    `;
+        if (!materiais[insumo]) {
+          materiais[insumo] = {
+            insumo,
+            comprimento,
+            tamanhoBarra,
+            quantidadeTotal: 0,
+            barras: 0
+          };
+        }
 
-    // Índices em EstruturaProduto
-    const pIdx = headerIndex(est.headers, "Produto", "Produto Pai", "Produto Base");
-    const iIdx = headerIndex(est.headers, "Insumo", "Material", "Peça", "Componente");
-    const qIdx = headerIndex(est.headers, "Quantidade", "Qtd", "Consumo");
-    const uIdx = headerIndex(est.headers, "Medidas", "Und", "Unid");
-
-    if (pIdx < 0 || iIdx < 0 || qIdx < 0) {
-      statusMsg(`Não encontrei as colunas esperadas na aba "EstruturaProduto" (ex.: “Produto”, “Insumo”, “Quantidade”, “Unidade”).`, "err");
-      return;
-    }
-
-    // Montar mapa de estrutura por produto (normalizado)
-    const estruturaPorProduto = new Map(); // key: produto normalizado -> [{insumo, qtd, unidade}]
-    for (const r of est.data) {
-      const prod = r[pIdx]; const insumo = r[iIdx];
-      const qtd  = parseFloat(String(r[qIdx] ?? "0").replace(",", "."));
-      const und  = uIdx >= 0 ? (r[uIdx] || "") : "";
-      if (!prod || !insumo || !qtd) continue;
-      const key = normKey(prod);
-      if (!estruturaPorProduto.has(key)) estruturaPorProduto.set(key, []);
-      estruturaPorProduto.get(key).push({ insumo: String(insumo).trim(), qtd, unidade: String(und).trim() });
-    }
-
-    // Agregar materiais (BOM consolidado)
-    const agreg = new Map(); // key: insumo|unidade -> qtd total
-    const faltantes = [];    // produtos que não encontrei na estrutura
-
-    vendidos.forEach(v => {
-      const key = normKey(v.nome);
-      const lista = estruturaPorProduto.get(key);
-      if (!lista) {
-        faltantes.push(v.nome);
-        return;
-      }
-      lista.forEach(item => {
-        const k = item.unidade ? `${item.insumo}__${item.unidade}` : `${item.insumo}__`;
-        accAdd(agreg, k, v.qtd * item.qtd);
+        materiais[insumo].quantidadeTotal += quantidade;
+        materiais[insumo].barras += totalBarras;
       });
-    });
 
-    // Renderização
-    const linhas = [];
-    agreg.forEach((qtd, k) => {
-      const [insumo, unidade] = k.split("__");
-      linhas.push({ insumo, unidade: unidade || "", quantidade: qtd });
-    });
-    // Ordena por insumo
-    linhas.sort((a,b) => a.insumo.localeCompare(b.insumo, "pt-BR"));
+      const tbody = document.querySelector('#materialTable tbody');
+      tbody.innerHTML = '';
+      Object.values(materiais).forEach(mat => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${mat.insumo}</td>
+          <td>${mat.comprimento}</td>
+          <td>${mat.tamanhoBarra}</td>
+          <td>${mat.quantidadeTotal}</td>
+          <td>${mat.barras}</td>
+        `;
+      });
 
-    const tabela = [
-      `<table>
-        <thead>
-          <tr>
-            <th>Insumo</th>
-            <th>Unidade</th>
-            <th class="right">Quantidade Total</th>
-          </tr>
-        </thead>
-        <tbody>`,
-      ...linhas.map(l => `
-          <tr>
-            <td>${l.insumo}</td>
-            <td>${l.unidade}</td>
-            <td class="right">${fmtQty(l.quantidade)}</td>
-          </tr>`),
-      `</tbody></table>`
-    ].join("");
+      document.getElementById('materialTable').style.display = 'table';
+    }
 
-    const alerta = faltantes.length
-      ? `<div class="status err">Atenção: não encontrei estrutura para: <b>${faltantes.join(", ")}</b>. Verifique nomes na aba “EstruturaProduto”.</div>`
-      : "";
+    function saveOrder() {
+      if (!orderData.length) return alert('Gere uma ordem antes.');
 
-    resultadoEl.innerHTML = tabela + alerta;
-    statusMsg(`Lista de materiais gerada com sucesso (${linhas.length} itens).`, "ok");
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.text())
+      .then(message => {
+        document.getElementById('message').innerText = message;
+      })
+      .catch(error => {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar a ordem.');
+      });
+    }
 
-  } catch (err) {
-    console.error(err);
-    statusMsg("Erro ao ler a planilha. Verifique o compartilhamento e os nomes das abas.", "err");
-    resultadoEl.innerHTML = "";
-  }
-}
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+      let y = 20;
 
-function statusMsg(msg, tipo="muted") {
-  statusEl.textContent = msg;
-  statusEl.className = `status ${tipo}`;
-}
-</script>
+      const cliente = orderData[0].cliente;
+      const pedido = orderData[0].pedido;
+      const responsavel = document.getElementById("responsavel").value;
+      const ordem = orderData[0].numeroOrdem;
+
+      doc.setFontSize(12);
+      doc.text(`Ordem de Produção: ${orderNumber}`, 14, y);
+      doc.text(`Cliente: ${cliente}`, 14, y + 8);
+      doc.text(`Nº do Pedido: ${document.getElementById('orcamento').value.trim()}`, 14, y + 16);
+      doc.text(`Responsável: ${responsavel}`, 14, y + 24);
+
+      const totalPecas = orderData.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+      doc.text(`Total de Peças: ${totalPecas}`, 14, y + 32);
+
+      let subY = y + 42;
+      doc.text('Subtotal de Produtos:', 14, subY);
+      let produtos = {};
+      orderData.forEach(i => produtos[i.produto] = (produtos[i.produto] || 0) + 1);
+      Object.entries(produtos).forEach(([prod, qtd]) => {
+        subY += 8;
+        doc.text(`- ${prod}: ${qtd} unidade(s)`, 18, subY);
+      });
+
+      doc.save(`Ordem_${ordem}.pdf`);
+    }
+  </script>
 </body>
 </html>
