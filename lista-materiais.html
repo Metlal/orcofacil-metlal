@@ -165,7 +165,7 @@
       const pIdx = headerIndex(est.headers, "Produto","Produto Pai","Produto Base");
       const iIdx = headerIndex(est.headers, "Insumo","Material","Peça","Componente");
       const qIdx = headerIndex(est.headers, "Quantidade","Qtd","Consumo");
-      const uIdx = headerIndex(est.headers, "Unidade","Und","Unid");
+      const uIdx = headerIndex(est.headers, "Medidas","Und","Unid");
       if (pIdx<0 || iIdx<0 || qIdx<0){
         statusMsg('Não encontrei colunas esperadas na aba "EstruturaProduto" (ex.: “Produto”, “Insumo”, “Quantidade”).', "err");
         return;
@@ -300,3 +300,4 @@
   </script>
 </body>
 </html>
+
